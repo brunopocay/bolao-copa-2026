@@ -54,3 +54,9 @@ const BONUS = [
   { id:'keeper',   label:'🧤 Melhor goleiro',           type:'player', pts:12 },
   { id:'defense',  label:'🛡️ Melhor defesa (seleção)',  type:'team',   pts:10 }
 ];
+
+/* 6) SOBRESCRITA DE HORÁRIOS DE JOGOS ---------------------------------
+   Não é mais necessário usar overrides pois todos os jogos oficiais estão
+   definidos de forma estática no arquivo js/data.js.
+--------------------------------------------------------------------- */
+const MATCH_KICKOFF_OVERRIDES = {};
