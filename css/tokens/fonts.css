@@ -1,0 +1,10 @@
+/* =====================================================================
+   FONTS — Bolão Copa 2026
+   Two open-source (SIL OFL) Google Fonts, matching the original app:
+   - Outfit          → display / headings / buttons (geometric, punchy)
+   - Plus Jakarta Sans → body / UI text (warm humanist sans)
+   Loaded from Google Fonts. Both are OFL — free to embed and share.
+   NOTE: substitute self-hosted .woff2 binaries here if you need offline.
+   ===================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');

@@ -1,0 +1,52 @@
+/* =====================================================================
+   TYPOGRAPHY — Bolão Copa 2026
+   Display = Outfit (geometric, loud, often UPPERCASE for energy).
+   Body/UI = Plus Jakarta Sans (friendly, legible at small sizes).
+   ===================================================================== */
+
+:root {
+  /* ---- FAMILIES -------------------------------------------------- */
+  --font-display: 'Outfit', system-ui, -apple-system, sans-serif;
+  --font-body:    'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-mono:    ui-monospace, Menlo, monospace; /* @kind font */
+
+  /* ---- WEIGHTS --------------------------------------------------- */
+  --w-regular:  400; /* @kind font */
+  --w-medium:   500; /* @kind font */
+  --w-semibold: 600; /* @kind font */
+  --w-bold:     700; /* @kind font */
+  --w-extra:    800; /* @kind font */
+  --w-black:    900; /* @kind font */
+
+  /* ---- TYPE SCALE (rem) ------------------------------------------ */
+  --fs-display:  2.2rem;   /* header H1, ~35px — UPPERCASE hero */
+  --fs-h1:       1.6rem;   /* page title */
+  --fs-h2:       1.3rem;   /* section heading (h2.sec) */
+  --fs-h3:       1.1rem;   /* subhead */
+  --fs-lg:       1.05rem;  /* button / emphasized */
+  --fs-base:     1rem;     /* body */
+  --fs-sm:       0.9rem;   /* muted body, labels */
+  --fs-xs:       0.82rem;  /* badges, captions */
+  --fs-2xs:      0.75rem;  /* tags, pills, fine print */
+
+  /* ---- LINE HEIGHTS ---------------------------------------------- */
+  --lh-tight:   1.1;   /* @kind font */
+  --lh-snug:    1.3;   /* @kind font */
+  --lh-normal:  1.5;   /* @kind font */
+  --lh-relaxed: 1.7;   /* @kind font */
+
+  /* ---- LETTER SPACING -------------------------------------------- */
+  --ls-tight:   -0.5px;   /* @kind font */
+  --ls-normal:  0;        /* @kind font */
+  --ls-wide:    0.5px;    /* @kind font */
+
+  /* ---- SEMANTIC ROLES -------------------------------------------- */
+  --text-display-font:  var(--font-display);
+  --text-display-weight: var(--w-black);
+  --text-heading-font:  var(--font-display);
+  --text-heading-weight: var(--w-extra);
+  --text-body-font:     var(--font-body);
+  --text-body-weight:   var(--w-regular);
+  --text-label-font:    var(--font-display);
+  --text-label-weight:  var(--w-bold);
+}

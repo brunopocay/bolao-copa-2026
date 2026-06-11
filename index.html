@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bolão da Copa 2026 ⚽🏆</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+<header class="festa-header">
+  <div class="header-content">
+    <div class="eyebrow">Bolão da</div>
+    <h1>Copa 2026 ⚽</h1>
+    <p>Fase de grupos • Estados Unidos, México &amp; Canadá</p>
+  </div>
+  <div class="badge-row">
+    <span class="badge glass">✅ Acertou o resultado = <b style="color:var(--gold-300)">3 pts</b></span>
+    <span class="badge glass">🎯 + placar exato = <b style="color:var(--gold-300)">+2 pts</b></span>
+    <span class="badge glass">🏆 Bônus do torneio = <b style="color:var(--gold-300)">até 18 pts</b></span>
+  </div>
+</header>
+
+<nav class="tabs-nav">
+  <button data-tab="palpites" class="tab-btn active">⚽ Palpites</button>
+  <button data-tab="bonus" class="tab-btn">🏆 Bônus</button>
+  <button data-tab="ranking" class="tab-btn">📊 Ranking</button>
+  <button data-tab="compartilhar" class="tab-btn">🔗 Compartilhar</button>
+  <button data-tab="admin" class="tab-btn">🔐 Admin</button>
+</nav>
+
+<div class="wrap">
+
+  <!-- ============ PALPITES ============ -->
+  <section id="palpites" class="active">
+    <div class="card" id="identityCard">
+      <h2 class="card-title">👤 Seu nome no bolão</h2>
+      <p class="text-muted" style="margin-bottom:10px">Digite seu nome para começar a palpitar. Ele aparece no ranking.</p>
+      <div class="input-group">
+        <input type="text" id="playerName" placeholder="Ex.: Bruno" maxlength="24" />
+        <button class="btn primary size-md" id="saveNameBtn">Entrar</button>
+      </div>
+    </div>
+
+    <div id="connWarn"></div>
+
+    <div id="matchesArea" style="display:none">
+      <p class="text-muted" style="margin-bottom:10px">
+        Preencha os placares que você acha que vão acontecer. Tudo salva sozinho ☁️.
+        <b style="color:var(--brand)">3 pts</b> por acertar o resultado e
+        <b style="color:var(--accent-gold)">+2 pts</b> se cravar o placar exato (total 5).
+        Jogos com <b style="color:var(--warning)">resultado oficial</b> ficam travados.
+      </p>
+      <div id="matchesList"></div>
+    </div>
+  </section>
+
+  <!-- ============ BÔNUS ============ -->
+  <section id="bonus">
+    <div class="card">
+      <h2 class="card-title">🏆 Palpites de bônus do torneio</h2>
+      <p class="text-muted">Quem vai longe na Copa? Cada acerto vale pontos extras. Os campos de <b>classificação final (campeão, vice e 3º)</b> e os demais bônus têm <b>prazo até o início das oitavas de final (4 de julho de 2026)</b>.</p>
+    </div>
+    <div id="bonusGate">
+      <div class="card center"><p class="text-muted">Digite seu nome na aba <b>⚽ Palpites</b> para liberar os bônus.</p></div>
+    </div>
+    <div id="bonusArea" style="display:none">
+      <div id="deadlineBanner"></div>
+      <div id="bonusList"></div>
+    </div>
+  </section>
+
+  <!-- ============ RANKING ============ -->
+  <section id="ranking">
+    <div class="card">
+      <h2 class="card-title">📊 Classificação ao vivo</h2>
+      <p class="text-muted">Atualiza em tempo real conforme os resultados são lançados. Inclui jogos + bônus.</p>
+    </div>
+    <div id="rankList"><p class="text-muted center">Carregando…</p></div>
+  </section>
+
+  <!-- ============ COMPARTILHAR ============ -->
+  <section id="compartilhar">
+    <div class="card center">
+      <h2 class="card-title" style="justify-content:center">🔗 Chame a galera</h2>
+      <p class="text-muted">Aponte a câmera no QR Code ou compartilhe o link.</p>
+      <div id="qrcode"></div>
+      <div class="share-url" id="shareUrl"></div>
+      <div class="row-btns">
+        <button class="btn wa size-md" id="waBtn">💬 Enviar no WhatsApp</button>
+        <button class="btn ghost size-md" id="copyBtn">📋 Copiar link</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ADMIN ============ -->
+  <section id="admin">
+    <div class="card">
+      <h2 class="card-title">🔐 Painel do organizador</h2>
+      <p class="text-muted" style="margin-bottom:10px">Lance aqui os <b>resultados oficiais</b> (jogos e bônus). Isso recalcula o ranking de todos automaticamente.</p>
+      <div id="adminLogin" class="input-group">
+        <input type="text" id="adminPass" placeholder="Senha do admin" />
+        <button class="btn blue size-md" id="adminBtn">Acessar</button>
+      </div>
+      <div id="adminArea" style="display:none">
+        <div class="banner success">✅ Modo organizador ativo. Os placares abaixo são os resultados <b>oficiais</b>.</div>
+        <button class="btn ghost size-md" id="adminLogout" style="margin-bottom:12px">Sair do modo admin</button>
+        <div class="subhead">🏆 Resultados dos bônus</div>
+        <div id="adminBonus"></div>
+        <div class="subhead">⚽ Resultados dos jogos</div>
+        <div id="adminMatches"></div>
+      </div>
+    </div>
+
+    <details class="help">
+      <summary>⚙️ Como ligar o Firebase (passo a passo)</summary>
+      <ol>
+        <li>Acesse <code>console.firebase.google.com</code> e crie um projeto.</li>
+        <li>No menu, vá em <b>Build → Realtime Database → Criar banco de dados</b> (modo de teste).</li>
+        <li>Em <b>Configurações do projeto → Seus apps</b>, registre um app <b>Web</b> (&lt;/&gt;).</li>
+        <li>Copie o objeto <code>firebaseConfig</code> e cole em <code>js/config.js</code>.</li>
+        <li>Troque a senha em <code>ADMIN_PASSWORD</code> e, se quiser, a data em <code>BONUS_DEADLINE</code>.</li>
+        <li>Suba a pasta em GitHub Pages, Netlify ou Vercel e compartilhe o link.</li>
+      </ol>
+    </details>
+  </section>
+
+</div>
+
+<div class="save-bar" id="saveBar" style="display:none">
+  <span class="info" id="saveInfo">☁️ Tudo salvo</span>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Bibliotecas externas (CDN) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<!-- Código do projeto (ordem importa) -->
+<script src="js/config.js"></script>
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

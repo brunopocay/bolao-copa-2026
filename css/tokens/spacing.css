@@ -1,0 +1,61 @@
+/* =====================================================================
+   SPACING, RADII, SHADOWS, MOTION — Bolão Copa 2026
+   Generous rounding (pill-friendly), soft green-tinted shadows,
+   springy-but-quick motion. The vibe is bouncy and friendly.
+   ===================================================================== */
+
+:root {
+  /* ---- SPACING (4px base) ---------------------------------------- */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ---- RADII (rounded, playful) ---------------------------------- */
+  --radius-sm:    8px;    /* tags, small chips */
+  --radius-md:    12px;   /* inputs, buttons */
+  --radius-lg:    16px;   /* banners, ranking rows */
+  --radius-xl:    18px;   /* match / bonus rows */
+  --radius-2xl:   20px;   /* cards */
+  --radius-pill:  30px;   /* badges, tab buttons */
+  --radius-full:  9999px; /* toasts, circular */
+
+  /* ---- BORDERS --------------------------------------------------- */
+  --border-thin:   1px;   /* @kind spacing */
+  --border-base:   1.5px; /* @kind spacing */
+  --border-accent: 4px;   /* @kind spacing */
+
+  /* ---- SHADOWS (green-tinted, soft) ------------------------------ */
+  --shadow-xs:    0 4px 12px rgba(1, 42, 28, 0.03);
+  --shadow-sm:    0 4px 12px rgba(1, 42, 28, 0.06);
+  --shadow-md:    0 8px 24px rgba(1, 42, 28, 0.06);
+  --shadow-lg:    0 8px 30px rgba(1, 42, 28, 0.08);
+  --shadow-header: 0 6px 20px rgba(0, 75, 48, 0.15);
+
+  /* colored "glow" shadows under brand elements */
+  --glow-brand:   0 4px 12px rgba(0, 209, 108, 0.25);
+  --glow-brand-lg: 0 6px 18px rgba(0, 209, 108, 0.35);
+  --glow-blue:    0 4px 12px rgba(2, 132, 199, 0.2);
+  --glow-gold:    0 2px 8px rgba(250, 204, 21, 0.4);
+  --glow-wa:      0 4px 12px rgba(37, 211, 102, 0.25);
+
+  /* focus ring */
+  --ring-brand:   0 0 0 3px rgba(0, 195, 102, 0.15);
+
+  /* ---- MOTION ---------------------------------------------------- */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);          /* @kind other */
+  --ease-spring:   cubic-bezier(0.175, 0.885, 0.32, 1.275); /* @kind other */
+  --dur-fast:    0.2s;  /* @kind other */
+  --dur-base:    0.25s; /* @kind other */
+  --dur-slow:    0.3s;  /* @kind other */
+
+  /* ---- LAYOUT ---------------------------------------------------- */
+  --content-max: 760px;   /* @kind spacing */
+  --tap-min:     44px;    /* @kind spacing */
+}

@@ -1,0 +1,111 @@
+/* =====================================================================
+   COLORS — Bolão Copa 2026
+   A vibrant, joyful "festa do futebol" palette. Pitch-green leads,
+   with cyan, royal blue and a celebratory gold/yellow. Warm red for
+   alerts. Neutrals are green-tinted ink, never pure grey-black.
+   ===================================================================== */
+
+:root {
+  /* ---- BRAND SCALES ---------------------------------------------- */
+
+  /* Green — primary "campo" (pitch). The signature color. */
+  --green-50:  #ecfdf3;
+  --green-100: #d1fae0;
+  --green-200: #a7f3c6;
+  --green-300: #6ee7a8;
+  --green-400: #34d97f;
+  --green-500: #00c366;   /* base brand green */
+  --green-600: #00a052;   /* hover / gradient end */
+  --green-700: #047857;
+  --green-800: #0c4a35;
+  --green-900: #0a2d20;   /* ink */
+
+  /* Cyan — "água" festive accent (oceans of the 3 host nations) */
+  --cyan-300:  #67e8f9;
+  --cyan-400:  #22cadb;
+  --cyan-500:  #00a2c3;   /* base */
+  --cyan-600:  #0284c7;
+
+  /* Blue — royal / trophy-night */
+  --blue-400:  #3b82f6;
+  --blue-500:  #2563eb;
+  --blue-600:  #1e40af;   /* deep header blue */
+  --blue-700:  #1e3a8a;
+
+  /* Gold / Yellow — celebration, medals, exact-score highlight */
+  --gold-300:  #fef08a;
+  --gold-400:  #facc15;   /* base sunshine yellow */
+  --gold-500:  #eab308;
+  --gold-600:  #d97706;   /* amber, bonus accent */
+  --gold-700:  #b45309;
+
+  /* Red / Pink — warm alert, deadlines, "errou" */
+  --red-400:   #f87171;
+  --red-500:   #ef4444;   /* base */
+  --red-600:   #dc2626;
+  --red-700:   #b91c1c;
+
+  /* WhatsApp green — the share channel of choice */
+  --wa-500:    #25d366;
+  --wa-600:    #128c7e;
+
+  /* ---- NEUTRALS (green-tinted ink) ------------------------------- */
+  --ink-900:   #0a2d20;   /* primary text */
+  --ink-700:   #0c4a35;   /* heading green */
+  --ink-500:   #497a66;   /* muted text */
+  --ink-300:   #9cc3b3;   /* faint */
+  --line:      rgba(0, 168, 107, 0.12);
+  --line-strong: rgba(0, 168, 107, 0.22);
+
+  --white:     #ffffff;
+  --paper:     #fbfefe;   /* off-white card interior */
+  --mist:      #f0faf5;   /* tinted input / inset fill */
+
+  /* ---- SEMANTIC ALIASES ------------------------------------------ */
+  --brand:            var(--green-500);
+  --brand-hover:      var(--green-600);
+  --brand-ink:        var(--green-700);
+
+  --text-strong:      var(--ink-900);
+  --text-heading:     var(--ink-700);
+  --text-body:        var(--ink-900);
+  --text-muted:       var(--ink-500);
+  --text-on-brand:    var(--white);
+
+  --surface-page:     #f4faf6;
+  --surface-card:     var(--white);
+  --surface-card-hover: #f9fdfb;
+  --surface-inset:    var(--mist);
+
+  --border-card:      rgba(0, 168, 107, 0.15);
+  --border-input:     rgba(0, 168, 107, 0.15);
+  --border-focus:     var(--green-500);
+
+  --accent-cyan:      var(--cyan-500);
+  --accent-blue:      var(--blue-600);
+  --accent-gold:      var(--gold-600);
+
+  --success:          var(--green-500);
+  --warning:          var(--gold-500);
+  --danger:           var(--red-500);
+  --info:             var(--cyan-600);
+
+  /* points/medal semantics from the app */
+  --pts-exact:        var(--gold-400);   /* +5 cravou o placar */
+  --pts-result:       var(--green-300);  /* +3 acertou o resultado */
+  --pts-miss:         #e5e7eb;
+
+  /* ---- SIGNATURE GRADIENTS --------------------------------------- */
+  /* The "festa" header — green → cyan → blue, gold underline */
+  --grad-festa:   linear-gradient(135deg, #00d16c 0%, #00a2c3 50%, #1e40af 100%); /* @kind color */
+  /* Primary button / brand fill */
+  --grad-brand:   linear-gradient(135deg, #00d16c 0%, #00a052 100%); /* @kind color */
+  /* Blue alt action */
+  --grad-blue:    linear-gradient(135deg, #0284c7 0%, #0369a1 100%); /* @kind color */
+  /* Gold celebration (medals, exact-score tags) */
+  --grad-gold:    linear-gradient(135deg, #fef08a 0%, #facc15 100%); /* @kind color */
+  /* WhatsApp */
+  --grad-wa:      linear-gradient(135deg, #25d366 0%, #128c7e 100%); /* @kind color */
+  /* Soft page wash */
+  --grad-page:    linear-gradient(135deg, #f4faf6 0%, #eaf5f0 50%, #dcf0e6 100%); /* @kind color */
+}

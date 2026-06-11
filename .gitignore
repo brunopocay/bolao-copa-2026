@@ -1,0 +1,20 @@
+# Dependências / build
+node_modules/
+dist/
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Editores
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Se um dia você mover segredos para um arquivo separado, ignore-o aqui:
+# js/secrets.js
+
+# Pasta do Design System (já integrado ao projeto)
+/Bolão Copa 2026 Design System/
