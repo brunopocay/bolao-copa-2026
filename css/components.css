@@ -113,8 +113,8 @@ header.festa-header p {
 .tabs-nav::-webkit-scrollbar { display: none; }
 
 .tab-btn {
-  flex: 1;
-  min-width: 95px;
+  flex: 1 0 auto;
+  min-width: 90px;
   background: transparent;
   border: none;
   border-radius: var(--radius-pill);
@@ -126,6 +126,7 @@ header.festa-header p {
   cursor: pointer;
   white-space: nowrap;
   transition: all var(--dur-base) var(--ease-standard);
+  -webkit-tap-highlight-color: transparent;
 }
 .tab-btn:hover {
   color: var(--brand);
@@ -220,6 +221,7 @@ input[type="text"]:focus, select:focus {
   cursor: pointer;
   transition: transform var(--dur-base) var(--ease-standard), box-shadow var(--dur-base) var(--ease-standard), filter var(--dur-base) var(--ease-standard);
   border: none;
+  -webkit-tap-highlight-color: transparent;
 }
 .btn.size-md {
   padding: 12px 22px;
