@@ -32,6 +32,15 @@ function getFlagHtml(emoji, name) {
   return `<span class="fl-emoji">${emoji}</span>`;
 }
 
+function formatKickoff(ts) {
+  const d = new Date(ts);
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  return `${day}/${month} às ${hours}:${minutes}`;
+}
+
 /* ----------------------- PONTUAÇÃO ----------------------- */
 function sign(h,a){ return h>a ? 1 : (h<a ? -1 : 0); }
 
@@ -103,7 +112,7 @@ function renderMatches(){
       const r=el('div','round-label'); r.textContent=`${m.round}ª rodada`; box.appendChild(r);
     }
     const res = RESULTS[m.id];
-    const locked = !!res;
+    const locked = !!res || Date.now() >= m.kickoff;
     const pick = myPicks[m.id]||{};
     const row=el('div','match-row'+(locked?' locked':''));
     row.innerHTML = `
@@ -114,6 +123,10 @@ function renderMatches(){
         <input class="score-input" type="number" min="0" max="99" inputmode="numeric" data-id="${m.id}" data-side="a" value="${pick.a??''}" ${locked?'disabled':''}/>
       </div>
       <div class="team away"><span class="fl">${getFlagHtml(m.away[1], m.away[0])}</span><span class="nm">${m.away[0]}</span></div>
+      <div class="match-details">
+        <span class="kickoff-time">📅 ${formatKickoff(m.kickoff)}</span>
+        ${ (locked && !res) ? ' <span class="lock-badge">🔒 Bloqueado (Jogo iniciado)</span>' : '' }
+      </div>
       ${ res ? `<div class="official-result">Oficial: ${getFlagHtml(m.home[1], m.home[0])} ${res.h} × ${res.a} ${getFlagHtml(m.away[1], m.away[0])} ${ptsTag(pick,res)}</div>`:'' }`;
     box.appendChild(row);
   }
@@ -127,6 +140,12 @@ function ptsTag(pick,res){
 let saveTimer=null;
 function onPickInput(e){
   const id=e.target.dataset.id, side=e.target.dataset.side;
+  const match = MATCHES.find(m => m.id === id);
+  if (match && Date.now() >= match.kickoff) {
+    showToast('Palpite bloqueado: o jogo já começou! ❌');
+    renderMatches();
+    return;
+  }
   let v=e.target.value===''?null:Math.max(0,Math.min(99,parseInt(e.target.value,10)));
   if(!myPicks[id]) myPicks[id]={h:null,a:null};
   myPicks[id][side]=v;

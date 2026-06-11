@@ -26,15 +26,38 @@ const RR = [
   { round:3, pairs:[[0,3],[1,2]] }
 ];
 
+/* Datas de início de cada rodada por grupo (UTC-3 / Horário de Brasília) */
+const GROUP_ROUND_DATES = {
+  A: ["2026-06-11", "2026-06-17", "2026-06-24"],
+  B: ["2026-06-13", "2026-06-18", "2026-06-24"],
+  C: ["2026-06-14", "2026-06-19", "2026-06-24"],
+  D: ["2026-06-12", "2026-06-18", "2026-06-24"],
+  E: ["2026-06-13", "2026-06-19", "2026-06-25"],
+  F: ["2026-06-14", "2026-06-20", "2026-06-25"],
+  G: ["2026-06-15", "2026-06-20", "2026-06-26"],
+  H: ["2026-06-15", "2026-06-21", "2026-06-26"],
+  I: ["2026-06-16", "2026-06-21", "2026-06-26"],
+  J: ["2026-06-16", "2026-06-22", "2026-06-27"],
+  K: ["2026-06-17", "2026-06-22", "2026-06-27"],
+  L: ["2026-06-17", "2026-06-23", "2026-06-27"]
+};
+
 /* Gera os 72 jogos com um id estável (ex.: "C-01"). */
 const MATCHES = [];
 for(const g of Object.keys(GROUPS)){
-  for(const r of RR){
+  for(let rIdx = 0; rIdx < RR.length; rIdx++){
+    const r = RR[rIdx];
+    const baseDate = GROUP_ROUND_DATES[g][rIdx];
+    let matchInRound = 0;
     for(const [i,j] of r.pairs){
+      const time = matchInRound === 0 ? "15:00" : "18:00";
+      const kickoff = new Date(`${baseDate}T${time}:00-03:00`).getTime();
       MATCHES.push({
         id:`${g}-${i}${j}`, group:g, round:r.round,
-        home:GROUPS[g].teams[i], away:GROUPS[g].teams[j]
+        home:GROUPS[g].teams[i], away:GROUPS[g].teams[j],
+        kickoff: kickoff
       });
+      matchInRound++;
     }
   }
 }
