@@ -8,6 +8,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/styles.css" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Bolão 2026" />
+<link rel="apple-touch-icon" href="https://img.icons8.com/color/192/000000/world-cup.png" />
+<link rel="manifest" href="manifest.json" />
 </head>
 <body>
 <header class="festa-header">
@@ -35,6 +40,30 @@
 
   <!-- ============ PALPITES ============ -->
   <section id="palpites" class="active">
+    <div class="banner-premio">
+      <span class="gift-icon">🎁</span>
+      <div>
+        <h3>Prêmio do Vencedor</h3>
+        <p>O grande campeão do bolão receberá um prêmio de <b>R$ 50,00 no PIX</b>! Participe e garanta seus palpites.</p>
+      </div>
+    </div>
+
+    <!-- Card de Notificações amigáveis -->
+    <div class="card" id="notificationCard" style="display:none">
+      <h2 class="card-title">🔔 Receber Alertas</h2>
+      <p class="text-muted" style="margin-bottom:10px">
+        Fique tranquilo! Não enviamos spam. Você receberá avisos <b>apenas</b> em 2 situações:
+      </p>
+      <ul style="margin: 0 0 12px 20px; font-size:0.9rem; color:var(--text-muted);">
+        <li>⏰ 10 minutos antes de um jogo começar (se você esquecer de palpitar).</li>
+        <li>📊 Quando o organizador cadastrar novos resultados e o ranking for atualizado.</li>
+      </ul>
+      <button class="btn primary size-md" id="enableNotificationsBtn">Ativar Notificações</button>
+      <div id="pwaInstructions" class="pwa-instructions" style="display:none">
+        📱 <b>Usuário de iPhone/iOS:</b> Para habilitar as notificações no celular, clique no ícone de <b>Compartilhar</b> no Safari e selecione <b>"Adicionar à Tela de Início"</b>. Em seguida, abra o app pela tela inicial.
+      </div>
+    </div>
+
     <div class="card" id="identityCard">
       <h2 class="card-title">👤 Seu nome no bolão</h2>
       <p class="text-muted" style="margin-bottom:10px">Digite seu nome para começar a palpitar. Ele aparece no ranking.</p>
@@ -74,11 +103,33 @@
 
   <!-- ============ RANKING ============ -->
   <section id="ranking">
+    <div class="banner-premio">
+      <span class="gift-icon">🎁</span>
+      <div>
+        <h3>Prêmio do Vencedor</h3>
+        <p>O grande campeão do bolão receberá um prêmio de <b>R$ 50,00 no PIX</b>! Participe e garanta seus palpites.</p>
+      </div>
+    </div>
+
     <div class="card">
       <h2 class="card-title">📊 Classificação ao vivo</h2>
       <p class="text-muted">Atualiza em tempo real conforme os resultados são lançados. Inclui jogos + bônus.</p>
     </div>
+    
     <div id="rankList"><p class="text-muted center">Carregando…</p></div>
+
+    <div class="card help-card">
+      <h3 style="margin-top:0; font-size:1.05rem; display:flex; align-items:center; gap:8px;">⚖️ Critérios de Desempate</h3>
+      <p class="text-muted" style="font-size:0.82rem; line-height:1.4;">
+        Se houver empate na pontuação geral, a classificação no ranking considerará os seguintes critérios em ordem:
+      </p>
+      <ol style="font-size:0.82rem; margin:8px 0 0 18px; padding:0; color:var(--text-muted); line-height:1.5;">
+        <li>🎯 <b>Placares Exatos:</b> Maior número de placares cravados exatamente (5 pontos).</li>
+        <li>✅ <b>Resultados Simples:</b> Maior número de acertos de resultado (vencedor ou empate - 3 pontos).</li>
+        <li>🏆 <b>Pontos de Bônus:</b> Maior pontuação obtida nos palpites bônus de torneio.</li>
+        <li>📅 <b>Quem salvou primeiro:</b> Data do primeiro envio dos palpites sem alterações posteriores (quem preencheu e manteve o palpite primeiro).</li>
+      </ol>
+    </div>
   </section>
 
   <!-- ============ COMPARTILHAR ============ -->
@@ -93,6 +144,24 @@
         <button class="btn ghost size-md" id="copyBtn">📋 Copiar link</button>
       </div>
     </div>
+
+    <div class="card center">
+      <h2 class="card-title" style="justify-content:center">💻 Sincronizar em Outros Dispositivos</h2>
+      <p class="text-muted">Deseja abrir seus palpites no computador ou em outro celular? Escaneie o QR Code abaixo ou compartilhe seu Link de Sincronização pessoal.</p>
+      <div id="syncQrcode" class="sync-qrcode-wrapper"></div>
+      <div class="share-url" id="syncUrl">Carregando link...</div>
+      <div class="row-btns">
+        <button class="btn wa size-md" id="syncWaBtn">💬 Enviar Link de Sincronização</button>
+        <button class="btn ghost size-md" id="syncCopyBtn">📋 Copiar Link</button>
+      </div>
+      <div style="margin-top:20px; border-top:1px dashed var(--line); padding-top:16px; text-align:left;">
+        <p class="text-muted" style="margin-bottom:8px; font-weight:700;">Ou digite seu código de acesso em outro aparelho:</p>
+        <div class="input-group">
+          <input type="text" id="syncImportCode" placeholder="Ex.: p_abc123" />
+          <button class="btn blue size-md" id="syncImportBtn" style="padding:10px 16px;">Importar</button>
+        </div>
+      </div>
+    </div>
   </section>
 
   <!-- ============ ADMIN ============ -->
@@ -105,7 +174,13 @@
         <button class="btn blue size-md" id="adminBtn">Acessar</button>
       </div>
       <div id="adminArea" style="display:none">
-        <div class="banner success">✅ Modo organizador ativo. Os placares abaixo são os resultados <b>oficiais</b>.</div>
+        <div class="banner success">✅ Modo organizador ativo. Lançamentos serão salvos após clicar em Salvar.</div>
+
+        <div class="admin-actions-bar">
+          <button class="btn primary size-md" id="adminSaveAllBtn" disabled>💾 Salvar Todos os Resultados</button>
+          <span id="adminSaveStatus" style="font-weight:700; font-size:0.85rem; color:var(--text-muted);">Nenhuma alteração pendente</span>
+        </div>
+
         <button class="btn ghost size-md" id="adminLogout" style="margin-bottom:12px">Sair do modo admin</button>
         <div class="subhead">🏆 Resultados dos bônus</div>
         <div id="adminBonus"></div>

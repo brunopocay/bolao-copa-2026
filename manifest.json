@@ -1,0 +1,22 @@
+{
+  "name": "Bolão Copa 2026",
+  "short_name": "Bolão 2026",
+  "description": "Faça seus palpites para a Copa do Mundo 2026 e dispute o ranking!",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f4faf6",
+  "theme_color": "#00c366",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://img.icons8.com/color/192/000000/world-cup.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://img.icons8.com/color/512/000000/world-cup.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
+}

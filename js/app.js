@@ -78,10 +78,32 @@ let PLAYERS = {};        // {pid:{name,picks,bonus}}
 let myPicks = {};
 let myBonus = {};
 
+// Variáveis para o salvamento em lote do admin
+let tempAdminResults = {};
+let tempAdminBonusResults = {};
+let adminHasUnsavedChanges = false;
+
+// Ordenar MATCHES cronologicamente: dia-hora-grupo
+MATCHES.sort((a, b) => a.kickoff - b.kickoff || a.group.localeCompare(b.group) || a.id.localeCompare(b.id));
+
 const $ = s=>document.querySelector(s);
 const el = (t,c)=>{const e=document.createElement(t); if(c)e.className=c; return e;};
+const WEEKDAYS = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
+function getDayHeader(ts) {
+  const d = new Date(ts);
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const weekday = WEEKDAYS[d.getDay()];
+  return `${day}/${month} - ${weekday}`;
+}
+
 function bonusClosed(){ return Date.now() >= BONUS_DEADLINE; }
 function configOk(){ return !firebaseConfig.apiKey.startsWith("COLE_"); }
+
+let isInitialLoadResults = true;
+let isInitialLoadBonus = true;
+let previousResultsJson = "";
+let previousBonusJson = "";
 
 function initFirebase(){
   if(!configOk()) return false;
@@ -89,9 +111,48 @@ function initFirebase(){
     firebase.initializeApp(firebaseConfig);
     db = firebase.database();
     FB_OK = true;
-    db.ref('results').on('value', s=>{ RESULTS = s.val()||{}; renderMatches(); renderAdmin(); renderRank(); });
-    db.ref('bonusResults').on('value', s=>{ BONUS_RESULTS = s.val()||{}; renderBonus(); renderAdmin(); renderRank(); });
-    db.ref('players').on('value', s=>{ PLAYERS = s.val()||{}; renderRank(); });
+    
+    db.ref('results').on('value', s=>{ 
+      const newVal = s.val()||{};
+      RESULTS = newVal; 
+      renderMatches(); 
+      if (!adminHasUnsavedChanges) {
+        tempAdminResults = JSON.parse(JSON.stringify(newVal));
+        renderAdmin(); 
+      }
+      renderRank(); 
+      
+      const newValJson = JSON.stringify(newVal);
+      if (!isInitialLoadResults && previousResultsJson && previousResultsJson !== newValJson) {
+        triggerAdminUpdateNotification();
+      }
+      previousResultsJson = newValJson;
+      isInitialLoadResults = false;
+    });
+    
+    db.ref('bonusResults').on('value', s=>{ 
+      const newVal = s.val()||{};
+      BONUS_RESULTS = newVal; 
+      renderBonus(); 
+      if (!adminHasUnsavedChanges) {
+        tempAdminBonusResults = JSON.parse(JSON.stringify(newVal));
+        renderAdmin(); 
+      }
+      renderRank(); 
+      
+      const newValJson = JSON.stringify(newVal);
+      if (!isInitialLoadBonus && previousBonusJson && previousBonusJson !== newValJson) {
+        triggerAdminUpdateNotification();
+      }
+      previousBonusJson = newValJson;
+      isInitialLoadBonus = false;
+    });
+    
+    db.ref('players').on('value', s=>{ 
+      PLAYERS = s.val()||{}; 
+      renderRank(); 
+      scheduleMatchReminders();
+    });
     return true;
   }catch(e){ console.error(e); return false; }
 }
@@ -100,16 +161,13 @@ function initFirebase(){
 function renderMatches(){
   const box = $('#matchesList'); if(!box || !myName) return;
   box.innerHTML='';
-  let curGroup=null, curRound=null;
+  let curDay=null;
   for(const m of MATCHES){
-    if(m.group!==curGroup){
-      curGroup=m.group; curRound=null;
-      const t=el('div','group-title'); t.innerHTML = `Grupo ${m.group} <small>· ${GROUPS[m.group].date}</small>`;
+    const dayStr = getDayHeader(m.kickoff);
+    if(dayStr!==curDay){
+      curDay=dayStr;
+      const t=el('div','group-title'); t.innerHTML = `📅 ${dayStr}`;
       box.appendChild(t);
-    }
-    if(m.round!==curRound){
-      curRound=m.round;
-      const r=el('div','round-label'); r.textContent=`${m.round}ª rodada`; box.appendChild(r);
     }
     const res = RESULTS[m.id];
     const locked = !!res || Date.now() >= m.kickoff;
@@ -124,8 +182,9 @@ function renderMatches(){
       </div>
       <div class="team away"><span class="fl">${getFlagHtml(m.away[1], m.away[0])}</span><span class="nm">${m.away[0]}</span></div>
       <div class="match-details">
-        <span class="kickoff-time">📅 ${formatKickoff(m.kickoff)}</span>
-        ${ (locked && !res) ? ' <span class="lock-badge">🔒 Bloqueado (Jogo iniciado)</span>' : '' }
+        <span class="kickoff-time">⏰ ${formatKickoff(m.kickoff)}</span>
+        <span style="background:var(--surface-inset); padding:2px 6px; border-radius:4px; font-weight:700; font-size:0.8em; color:var(--text-muted);">Grupo ${m.group} · ${m.round}ª rodada</span>
+        ${ (locked && !res) ? ' <span class="lock-badge">🔒 Bloqueado</span>' : '' }
       </div>
       ${ res ? `<div class="official-result">Oficial: ${getFlagHtml(m.home[1], m.home[0])} ${res.h} × ${res.a} ${getFlagHtml(m.away[1], m.away[0])} ${ptsTag(pick,res)}</div>`:'' }`;
     box.appendChild(row);
@@ -150,6 +209,7 @@ function onPickInput(e){
   if(!myPicks[id]) myPicks[id]={h:null,a:null};
   myPicks[id][side]=v;
   setSave('⏳ Salvando…'); clearTimeout(saveTimer); saveTimer=setTimeout(savePlayer,600);
+  scheduleMatchReminders();
 }
 
 /* ----------------------- RENDER: BÔNUS ----------------------- */
@@ -229,9 +289,27 @@ function totalFor(p){
 }
 function renderRank(){
   const box=$('#rankList'); if(!box) return;
-  const arr = Object.entries(PLAYERS).map(([id,p])=>({ id, name:p.name||'Sem nome', ...totalFor(p) }));
-  if(myName && !PLAYERS[pid]) arr.push({id:pid,name:myName,...totalFor({picks:myPicks,bonus:myBonus})});
-  arr.sort((a,b)=> b.total-a.total || b.exact-a.exact);
+  const arr = Object.entries(PLAYERS).map(([id,p])=>({ 
+    id, 
+    name:p.name||'Sem nome', 
+    updatedAt: p.updatedAt || Date.now(),
+    ...totalFor(p) 
+  }));
+  if(myName && !PLAYERS[pid]) {
+    arr.push({
+      id:pid,
+      name:myName,
+      updatedAt: Date.now(),
+      ...totalFor({picks:myPicks,bonus:myBonus})
+    });
+  }
+  arr.sort((a,b)=> {
+    if(b.total !== a.total) return b.total - a.total;
+    if(b.exact !== a.exact) return b.exact - a.exact;
+    if(b.hit !== a.hit) return b.hit - a.hit;
+    if(b.bonus !== a.bonus) return b.bonus - a.bonus;
+    return a.updatedAt - b.updatedAt; // Quem salvou primeiro leva vantagem
+  });
   if(arr.length===0){ box.innerHTML='<p class="text-muted center">Ninguém palpitou ainda. Seja o primeiro! ⚽</p>'; return; }
   box.innerHTML='';
   arr.forEach((p,idx)=>{
@@ -256,7 +334,7 @@ function renderAdmin(){
   const teamOpts = ['<option value="">— selecione —</option>']
       .concat(TEAMS.map(t=>`<option value="${t[0]}">${t[1]} ${t[0]}</option>`)).join('');
   for(const b of BONUS){
-    const real = BONUS_RESULTS[b.id] ?? '';
+    const real = tempAdminBonusResults[b.id] ?? '';
     const row=el('div','bonus-row');
     let field;
     if(b.type==='team'){
@@ -272,10 +350,11 @@ function renderAdmin(){
   bb.querySelectorAll('[data-abid]').forEach(inp=> inp.addEventListener('input', onAdminBonus));
 
   const box=$('#adminMatches'); box.innerHTML='';
-  let curGroup=null;
+  let curDay=null;
   for(const m of MATCHES){
-    if(m.group!==curGroup){ curGroup=m.group; const t=el('div','group-title'); t.innerHTML=`Grupo ${m.group}`; box.appendChild(t); }
-    const res=RESULTS[m.id]||{};
+    const dayStr = getDayHeader(m.kickoff);
+    if(dayStr!==curDay){ curDay=dayStr; const t=el('div','group-title'); t.innerHTML=`📅 ${dayStr}`; box.appendChild(t); }
+    const res=tempAdminResults[m.id]||{};
     const row=el('div','match-row');
     row.innerHTML=`
       <div class="team home"><span class="nm">${m.home[0]}</span><span class="fl">${getFlagHtml(m.home[1], m.home[0])}</span></div>
@@ -284,26 +363,49 @@ function renderAdmin(){
         <span class="x">×</span>
         <input class="score-input" type="number" min="0" max="99" data-id="${m.id}" data-side="a" value="${res.a??''}"/>
       </div>
-      <div class="team away"><span class="fl">${getFlagHtml(m.away[1], m.away[0])}</span><span class="nm">${m.away[0]}</span></div>`;
+      <div class="team away"><span class="fl">${getFlagHtml(m.away[1], m.away[0])}</span><span class="nm">${m.away[0]}</span></div>
+      <div class="match-details">
+        <span class="kickoff-time">⏰ ${formatKickoff(m.kickoff)}</span>
+        <span style="background:var(--surface-inset); padding:2px 6px; border-radius:4px; font-weight:700; font-size:0.8em; color:var(--text-muted);">Grupo ${m.group} · ${m.round}ª rodada</span>
+      </div>`;
     box.appendChild(row);
   }
   box.querySelectorAll('input').forEach(inp=> inp.addEventListener('input', onAdminInput));
 }
-let adminTimer=null;
+
+function updateAdminSaveButtonState(hasChanges) {
+  adminHasUnsavedChanges = hasChanges;
+  const btn = $('#adminSaveAllBtn');
+  const status = $('#adminSaveStatus');
+  if (btn && status) {
+    btn.disabled = !hasChanges;
+    if (hasChanges) {
+      btn.textContent = '💾 Salvar Alterações';
+      status.textContent = '⚠️ Há alterações não salvas!';
+      status.style.color = 'var(--danger)';
+    } else {
+      btn.textContent = '💾 Salvar Todos os Resultados';
+      status.textContent = 'Nenhuma alteração pendente';
+      status.style.color = 'var(--text-muted)';
+    }
+  }
+}
+
 function onAdminInput(e){
   const id=e.target.dataset.id, wrap=e.target.closest('.score-area');
   const h=wrap.querySelector('[data-side=h]').value, a=wrap.querySelector('[data-side=a]').value;
-  clearTimeout(adminTimer);
-  adminTimer=setTimeout(()=>{
-    if(h===''||a==='') db.ref('results/'+id).remove();
-    else db.ref('results/'+id).set({h:parseInt(h,10),a:parseInt(a,10)});
-    showToast('Resultado salvo ✓');
-  },500);
+  
+  if (h === '' || a === '') {
+    delete tempAdminResults[id];
+  } else {
+    tempAdminResults[id] = { h: parseInt(h, 10), a: parseInt(a, 10) };
+  }
+  updateAdminSaveButtonState(true);
 }
-let adminBTimer=null;
+
 function onAdminBonus(e){
   const id=e.target.dataset.abid, v=e.target.value.trim();
-
+  
   const wrapper = e.target.closest('.bonus-select-wrapper');
   if (wrapper) {
     const existingImg = wrapper.querySelector('.fl-img');
@@ -314,12 +416,161 @@ function onAdminBonus(e){
     }
   }
 
-  clearTimeout(adminBTimer);
-  adminBTimer=setTimeout(()=>{
-    if(v==='') db.ref('bonusResults/'+id).remove();
-    else db.ref('bonusResults/'+id).set(v);
-    showToast('Bônus oficial salvo ✓');
-  },500);
+  if (v === '') {
+    delete tempAdminBonusResults[id];
+  } else {
+    tempAdminBonusResults[id] = v;
+  }
+  updateAdminSaveButtonState(true);
+}
+
+function saveAllAdminChanges() {
+  if (!FB_OK) {
+    showToast("⚠️ Firebase não configurado");
+    return;
+  }
+  const btn = $('#adminSaveAllBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Salvando…';
+  
+  Promise.all([
+    db.ref('results').set(tempAdminResults),
+    db.ref('bonusResults').set(tempAdminBonusResults)
+  ]).then(() => {
+    showToast("Resultados oficiais salvos! ✓");
+    updateAdminSaveButtonState(false);
+  }).catch(e => {
+    console.error(e);
+    showToast("❌ Erro ao salvar");
+    updateAdminSaveButtonState(true);
+  });
+}
+
+/* ----------------------- NOTIFICAÇÕES ----------------------- */
+let scheduledReminders = {};
+function scheduleMatchReminders() {
+  if (!("Notification" in window) || Notification.permission !== "granted") return;
+  const now = Date.now();
+  let missingMatches = [];
+  for (const m of MATCHES) {
+    const timeToKickoff = m.kickoff - now;
+    const hasBet = myPicks[m.id] && myPicks[m.id].h !== null && myPicks[m.id].a !== null;
+    if (timeToKickoff > 0 && timeToKickoff <= 24 * 60 * 60 * 1000 && !hasBet) {
+      missingMatches.push(m);
+      const notifyTime = timeToKickoff - 10 * 60 * 1000;
+      if (notifyTime > 0) {
+        if (scheduledReminders[m.id]) clearTimeout(scheduledReminders[m.id]);
+        scheduledReminders[m.id] = setTimeout(() => {
+          new Notification("⚽ Partida iniciando em breve!", {
+            body: `O jogo ${m.home[0]} x ${m.away[0]} começa em 10 minutos e você ainda não palpitou!`,
+            icon: "https://img.icons8.com/color/96/000000/world-cup.png"
+          });
+        }, notifyTime);
+      }
+    }
+  }
+  const matchesArea = $('#matchesArea');
+  if (matchesArea) {
+    let warningBanner = $('#upcomingWarningBanner');
+    if (missingMatches.length > 0) {
+      if (!warningBanner) {
+        warningBanner = el('div', 'banner danger');
+        warningBanner.id = 'upcomingWarningBanner';
+        warningBanner.style.textAlign = 'center';
+        warningBanner.style.marginBottom = '16px';
+        matchesArea.insertBefore(warningBanner, matchesArea.firstChild);
+      }
+      warningBanner.innerHTML = `⚠️ Você tem <b>${missingMatches.length} jogo(s) nas próximas 24h</b> sem palpites! Não esqueça de preenchê-los.`;
+    } else if (warningBanner) {
+      warningBanner.remove();
+    }
+  }
+}
+
+let adminNotificationTimer = null;
+function triggerAdminUpdateNotification() {
+  clearTimeout(adminNotificationTimer);
+  adminNotificationTimer = setTimeout(() => {
+    showToast("📣 Resultados oficiais atualizados! Ranking recalculado.");
+    if ("Notification" in window && Notification.permission === "granted") {
+      new Notification("🏆 Bolão Copa 2026", {
+        body: "O organizador lançou novos resultados oficiais! Confira o ranking atualizado.",
+        icon: "https://img.icons8.com/color/96/000000/world-cup.png"
+      });
+    }
+  }, 1000);
+}
+
+function checkNotificationSupport() {
+  if (!("Notification" in window)) return;
+  const card = $('#notificationCard');
+  const inst = $('#pwaInstructions');
+  if (!card) return;
+  
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+  
+  if (Notification.permission === "default") {
+    card.style.display = 'block';
+    if (isIOS && !isStandalone) {
+      inst.style.display = 'block';
+      $('#enableNotificationsBtn').style.display = 'none';
+    } else {
+      inst.style.display = 'none';
+      $('#enableNotificationsBtn').style.display = 'inline-block';
+    }
+  } else if (Notification.permission === "granted") {
+    card.style.display = 'none';
+    scheduleMatchReminders();
+  } else if (Notification.permission === "denied") {
+    card.style.display = 'block';
+    card.innerHTML = `
+      <h2 class="card-title">🔔 Notificações Bloqueadas</h2>
+      <p class="text-muted">Você bloqueou as notificações para este site. Para receber avisos sobre os palpites e o ranking, ative a permissão nas configurações do seu navegador.</p>
+    `;
+  }
+}
+
+/* ----------------------- SINCRONIZAÇÃO ----------------------- */
+function checkImportPid() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const importPid = urlParams.get('import_pid') || urlParams.get('pid');
+  if (importPid && importPid.startsWith('p_') && importPid !== localStorage.getItem('bolao_pid')) {
+    if (FB_OK) {
+      db.ref('players/' + importPid).once('value').then(s => {
+        const d = s.val();
+        const name = d ? d.name : 'Sem Nome';
+        if (confirm(`Deseja sincronizar a conta de "${name}"? Seus palpites atuais neste dispositivo serão substituídos.`)) {
+          localStorage.setItem('bolao_pid', importPid);
+          if (d && d.name) localStorage.setItem('bolao_name', d.name);
+          const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+          window.history.replaceState({}, document.title, cleanUrl);
+          location.reload();
+        } else {
+          const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+          window.history.replaceState({}, document.title, cleanUrl);
+        }
+      });
+    } else {
+      if (confirm('Deseja carregar a conta deste link de sincronização?')) {
+        localStorage.setItem('bolao_pid', importPid);
+        const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+        location.reload();
+      }
+    }
+  }
+}
+
+function renderSyncSection() {
+  const syncUrl = window.location.href.split('?')[0].split('#')[0] + '?import_pid=' + pid;
+  $('#syncUrl').textContent = syncUrl;
+  
+  const syncQrContainer = $('#syncQrcode');
+  if (syncQrContainer) {
+    syncQrContainer.innerHTML = '';
+    new QRCode(syncQrContainer, { text: syncUrl, width: 180, height: 180, colorDark: '#2563eb', colorLight: '#ffffff' });
+  }
 }
 
 /* ----------------------- UI: tabs, identidade, admin, share ----------------------- */
@@ -343,6 +594,7 @@ function enterName(){
       const d=s.val();
       if(d){ if(d.picks) myPicks=d.picks; if(d.bonus) myBonus=d.bonus; }
       renderMatches(); renderBonus(); savePlayer();
+      checkNotificationSupport();
     });
   } else { renderMatches(); renderBonus(); }
   renderRank();
@@ -359,9 +611,17 @@ $('#adminBtn').addEventListener('click', async ()=>{
     renderAdmin(); showToast('Bem-vindo, organizador 🔐');
   } else showToast('Senha incorreta ❌');
 });
-$('#adminLogout').addEventListener('click',()=>{ isAdmin=false; $('#adminLogin').style.display='flex'; $('#adminArea').style.display='none'; $('#adminPass').value=''; });
+$('#adminLogout').addEventListener('click',()=>{ 
+  isAdmin=false; 
+  adminHasUnsavedChanges = false;
+  $('#adminLogin').style.display='flex'; 
+  $('#adminArea').style.display='none'; 
+  $('#adminPass').value=''; 
+});
 
-const shareLink = window.location.href.split('#')[0];
+$('#adminSaveAllBtn').addEventListener('click', saveAllAdminChanges);
+
+const shareLink = window.location.href.split('?')[0].split('#')[0];
 $('#shareUrl').textContent = shareLink;
 new QRCode($('#qrcode'), { text:shareLink, width:200, height:200, colorDark:'#0b132b', colorLight:'#ffffff' });
 $('#waBtn').addEventListener('click',()=>{
@@ -369,6 +629,55 @@ $('#waBtn').addEventListener('click',()=>{
   window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
 });
 $('#copyBtn').addEventListener('click',()=>{ navigator.clipboard.writeText(shareLink).then(()=>showToast('Link copiado 📋')); });
+
+// Sync Buttons Listeners
+$('#syncCopyBtn').addEventListener('click', () => {
+  const syncUrl = $('#syncUrl').textContent;
+  navigator.clipboard.writeText(syncUrl).then(() => showToast('Link de sincronização copiado! 📋'));
+});
+$('#syncWaBtn').addEventListener('click', () => {
+  const syncUrl = $('#syncUrl').textContent;
+  const msg = `💻 Link de Sincronização do meu Bolão:\nUse este link para abrir seus palpites em outro aparelho:\n${syncUrl}`;
+  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+});
+$('#syncImportBtn').addEventListener('click', () => {
+  const importCode = $('#syncImportCode').value.trim();
+  if (!importCode.startsWith('p_')) {
+    showToast('Código de acesso inválido! ❌');
+    return;
+  }
+  if (!FB_OK) {
+    showToast('Firebase não configurado ⚠️');
+    return;
+  }
+  db.ref('players/' + importCode).once('value').then(s => {
+    const d = s.val();
+    if (!d) {
+      showToast('Código não encontrado! ❌');
+      return;
+    }
+    if (confirm(`Deseja importar a conta e palpites de "${d.name || 'Sem nome'}"?`)) {
+      localStorage.setItem('bolao_pid', importCode);
+      if (d.name) localStorage.setItem('bolao_name', d.name);
+      location.reload();
+    }
+  });
+});
+
+$('#enableNotificationsBtn').addEventListener('click', () => {
+  if (!("Notification" in window)) return;
+  Notification.requestPermission().then(permission => {
+    if (permission === "granted") {
+      showToast("Notificações ativadas! 🔔");
+      checkNotificationSupport();
+      scheduleMatchReminders();
+    } else {
+      showToast("Notificações não ativadas ❌");
+      checkNotificationSupport();
+    }
+  });
+});
+
 function showToast(t){ const e=$('#toast'); e.textContent=t; e.classList.add('show'); setTimeout(()=>e.classList.remove('show'),2200); }
 
 /* ----------------------- BOOT ----------------------- */
@@ -377,6 +686,17 @@ function showToast(t){ const e=$('#toast'); e.textContent=t; e.classList.add('sh
   if(!ok){
     $('#connWarn').innerHTML = `<div class="banner danger">⚠️ <b>Firebase ainda não configurado.</b> A página funciona, mas os palpites <u>não serão salvos online</u> nem haverá ranking compartilhado até você preencher o <code>firebaseConfig</code> em <code>js/config.js</code>. Veja o passo a passo na aba <b>🔐 Admin</b> ou no README.</div>`;
   }
+  
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => console.log('PWA registrado:', reg.scope))
+      .catch(err => console.error('Erro no PWA sw:', err));
+  }
+  
+  checkImportPid();
+  renderSyncSection();
+  
   if(myName){ $('#playerName').value=myName; enterName(); }
   renderRank();
+  checkNotificationSupport();
 })();
