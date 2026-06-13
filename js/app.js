@@ -447,28 +447,102 @@ function saveAllAdminChanges() {
 }
 
 /* ----------------------- NOTIFICAÇÕES ----------------------- */
+function showNotificationSafely(title, options) {
+  if (!("Notification" in window) || Notification.permission !== "granted") return Promise.resolve(null);
+  
+  if ('serviceWorker' in navigator) {
+    return navigator.serviceWorker.ready.then(reg => {
+      return reg.showNotification(title, options);
+    }).catch(err => {
+      console.error('Erro ao mostrar notificação via ServiceWorker:', err);
+      try {
+        return new Notification(title, options);
+      } catch (e) {
+        console.error('Erro ao mostrar notificação via Construtor:', e);
+      }
+    });
+  } else {
+    try {
+      return Promise.resolve(new Notification(title, options));
+    } catch (e) {
+      console.error('Erro ao mostrar notificação via Construtor:', e);
+      return Promise.resolve(null);
+    }
+  }
+}
+
 let scheduledReminders = {};
-function scheduleMatchReminders() {
+async function scheduleMatchReminders() {
   if (!("Notification" in window) || Notification.permission !== "granted") return;
   const now = Date.now();
   let missingMatches = [];
+  
+  let reg = null;
+  if ('serviceWorker' in navigator) {
+    try {
+      reg = await navigator.serviceWorker.ready;
+    } catch (e) {
+      console.error('ServiceWorker ready error:', e);
+    }
+  }
+  
+  const supportsTriggers = ('showTrigger' in Notification.prototype) && (typeof TimestampTrigger !== 'undefined');
+  
   for (const m of MATCHES) {
     const timeToKickoff = m.kickoff - now;
     const hasBet = myPicks[m.id] && myPicks[m.id].h !== null && myPicks[m.id].a !== null;
+    const tag = `match-reminder-${m.id}`;
+    
     if (timeToKickoff > 0 && timeToKickoff <= 24 * 60 * 60 * 1000 && !hasBet) {
       missingMatches.push(m);
       const notifyTime = timeToKickoff - 10 * 60 * 1000;
       if (notifyTime > 0) {
-        if (scheduledReminders[m.id]) clearTimeout(scheduledReminders[m.id]);
-        scheduledReminders[m.id] = setTimeout(() => {
-          new Notification("⚽ Partida iniciando em breve!", {
-            body: `O jogo ${m.home[0]} x ${m.away[0]} começa em 10 minutos e você ainda não palpitou!`,
-            icon: "https://img.icons8.com/color/96/000000/world-cup.png"
-          });
-        }, notifyTime);
+        if (supportsTriggers && reg) {
+          try {
+            // Cancelar trigger existente se houver
+            const activeNotifications = await reg.getNotifications({ tag: tag, includeTriggered: true });
+            activeNotifications.forEach(n => n.close());
+            
+            // Agendar novo trigger
+            await reg.showNotification("⚽ Partida iniciando em breve!", {
+              body: `O jogo ${m.home[0]} x ${m.away[0]} começa em 10 minutos e você ainda não palpitou!`,
+              icon: "https://img.icons8.com/color/96/000000/world-cup.png",
+              tag: tag,
+              showTrigger: new TimestampTrigger(now + notifyTime)
+            });
+          } catch (e) {
+            console.error('Erro ao agendar via TimestampTrigger:', e);
+          }
+        } else {
+          // Fallback para setTimeout (iOS e navegadores sem suporte a triggers)
+          if (scheduledReminders[m.id]) clearTimeout(scheduledReminders[m.id]);
+          scheduledReminders[m.id] = setTimeout(() => {
+            showNotificationSafely("⚽ Partida iniciando em breve!", {
+              body: `O jogo ${m.home[0]} x ${m.away[0]} começa em 10 minutos e você ainda não palpitou!`,
+              icon: "https://img.icons8.com/color/96/000000/world-cup.png",
+              tag: tag
+            });
+          }, notifyTime);
+        }
+      }
+    } else {
+      // Se já passou, falta mais de 24h ou já tem palpite, cancela a notificação agendada
+      if (supportsTriggers && reg) {
+        try {
+          const activeNotifications = await reg.getNotifications({ tag: tag, includeTriggered: true });
+          activeNotifications.forEach(n => n.close());
+        } catch (e) {
+          console.error('Erro ao cancelar notificação agendada:', e);
+        }
+      } else {
+        if (scheduledReminders[m.id]) {
+          clearTimeout(scheduledReminders[m.id]);
+          delete scheduledReminders[m.id];
+        }
       }
     }
   }
+  
   const matchesArea = $('#matchesArea');
   if (matchesArea) {
     let warningBanner = $('#upcomingWarningBanner');
@@ -492,12 +566,11 @@ function triggerAdminUpdateNotification() {
   clearTimeout(adminNotificationTimer);
   adminNotificationTimer = setTimeout(() => {
     showToast("📣 Resultados oficiais atualizados! Ranking recalculado.");
-    if ("Notification" in window && Notification.permission === "granted") {
-      new Notification("🏆 Bolão Copa 2026", {
-        body: "O organizador lançou novos resultados oficiais! Confira o ranking atualizado.",
-        icon: "https://img.icons8.com/color/96/000000/world-cup.png"
-      });
-    }
+    showNotificationSafely("🏆 Bolão Copa 2026", {
+      body: "O organizador lançou novos resultados oficiais! Confira o ranking atualizado.",
+      icon: "https://img.icons8.com/color/96/000000/world-cup.png",
+      tag: "admin-update"
+    });
   }, 1000);
 }
 
