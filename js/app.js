@@ -77,6 +77,7 @@ let BONUS_RESULTS = {};  // {bonusId:value}
 let PLAYERS = {};        // {pid:{name,picks,bonus}}
 let myPicks = {};
 let myBonus = {};
+let activeStatusFilter = 'all'; // 'all', 'upcoming', 'finished'
 
 // Variáveis para o salvamento em lote do admin
 let tempAdminResults = {};
@@ -116,6 +117,7 @@ function initFirebase(){
       const newVal = s.val()||{};
       RESULTS = newVal; 
       renderMatches(); 
+      renderStandings(); 
       if (!adminHasUnsavedChanges) {
         tempAdminResults = JSON.parse(JSON.stringify(newVal));
         renderAdmin(); 
@@ -163,13 +165,18 @@ function renderMatches(){
   box.innerHTML='';
   let curDay=null;
   for(const m of MATCHES){
+    const res = RESULTS[m.id];
+    
+    // Filtro de status
+    if (activeStatusFilter === 'upcoming' && res) continue;
+    if (activeStatusFilter === 'finished' && !res) continue;
+
     const dayStr = getDayHeader(m.kickoff);
     if(dayStr!==curDay){
       curDay=dayStr;
       const t=el('div','group-title'); t.innerHTML = `📅 ${dayStr}`;
       box.appendChild(t);
     }
-    const res = RESULTS[m.id];
     const locked = !!res || Date.now() >= m.kickoff;
     const pick = myPicks[m.id]||{};
     const row=el('div','match-row'+(locked?' locked':''));
@@ -326,6 +333,202 @@ function renderRank(){
     box.appendChild(row);
   });
 }
+
+/* ----------------------- CLASSIFICAÇÃO DOS GRUPOS ----------------------- */
+function getHeadToHead(teamA, teamB, groupName) {
+  const match = MATCHES.find(m => 
+    m.group === groupName && 
+    ((m.home[0] === teamA && m.away[0] === teamB) || (m.home[0] === teamB && m.away[0] === teamA))
+  );
+  
+  const res = match ? RESULTS[match.id] : null;
+  if (!res || res.h === null || res.a === null) {
+    return { pointsDiff: 0, gdDiff: 0, gfDiff: 0 };
+  }
+  
+  let ptsA = 0, ptsB = 0;
+  let gfA = 0, gfB = 0;
+  let gaA = 0, gaB = 0;
+  
+  if (match.home[0] === teamA) {
+    gfA = res.h;
+    gaA = res.a;
+    gfB = res.a;
+    gaB = res.h;
+  } else {
+    gfA = res.a;
+    gaA = res.h;
+    gfB = res.h;
+    gaB = res.a;
+  }
+  
+  if (gfA > gaA) ptsA = 3;
+  else if (gfA < gaA) ptsB = 3;
+  else { ptsA = 1; ptsB = 1; }
+  
+  return {
+    pointsDiff: ptsB - ptsA, // so that high points for A returns negative (comes first)
+    gdDiff: (gfB - gaB) - (gfA - gaA),
+    gfDiff: gfB - gfA
+  };
+}
+
+function sortGroupTeams(teamsList, groupName) {
+  return teamsList.sort((a, b) => {
+    // 1. Pontos
+    if (b.points !== a.points) return b.points - a.points;
+    // 2. Saldo de gols
+    if (b.gd !== a.gd) return b.gd - a.gd;
+    // 3. Gols pró
+    if (b.gf !== a.gf) return b.gf - a.gf;
+    
+    // 4. Confronto direto
+    const h2h = getHeadToHead(a.name, b.name, groupName);
+    if (h2h.pointsDiff !== 0) return h2h.pointsDiff;
+    if (h2h.gdDiff !== 0) return h2h.gdDiff;
+    if (h2h.gfDiff !== 0) return h2h.gfDiff;
+    
+    // 5. Ordem Alfabética (Sorteio)
+    return a.name.localeCompare(b.name);
+  });
+}
+
+function calculateStandings() {
+  const standings = {};
+  
+  // Inicializa os grupos e seleções
+  for (const [groupName, groupData] of Object.entries(GROUPS)) {
+    standings[groupName] = {};
+    for (const teamInfo of groupData.teams) {
+      const teamName = teamInfo[0];
+      const teamEmoji = teamInfo[1];
+      standings[groupName][teamName] = {
+        name: teamName,
+        emoji: teamEmoji,
+        points: 0,
+        played: 0,
+        wins: 0,
+        draws: 0,
+        losses: 0,
+        gf: 0,
+        ga: 0,
+        gd: 0
+      };
+    }
+  }
+  
+  // Processa todos os jogos que possuem resultado cadastrado
+  for (const m of MATCHES) {
+    const res = RESULTS[m.id];
+    if (res && res.h !== null && res.a !== null) {
+      const g = m.group;
+      const homeTeam = m.home[0];
+      const awayTeam = m.away[0];
+      
+      const homeData = standings[g][homeTeam];
+      const awayData = standings[g][awayTeam];
+      
+      if (homeData && awayData) {
+        homeData.played++;
+        awayData.played++;
+        homeData.gf += res.h;
+        homeData.ga += res.a;
+        awayData.gf += res.a;
+        awayData.ga += res.h;
+        
+        if (res.h > res.a) {
+          homeData.points += 3;
+          homeData.wins++;
+          awayData.losses++;
+        } else if (res.h < res.a) {
+          awayData.points += 3;
+          awayData.wins++;
+          homeData.losses++;
+        } else {
+          homeData.points += 1;
+          awayData.points += 1;
+          homeData.draws++;
+          awayData.draws++;
+        }
+        
+        homeData.gd = homeData.gf - homeData.ga;
+        awayData.gd = awayData.gf - awayData.ga;
+      }
+    }
+  }
+  
+  // Ordena cada grupo
+  const sortedStandings = {};
+  for (const [groupName, teamsObj] of Object.entries(standings)) {
+    const teamsList = Object.values(teamsObj);
+    sortedStandings[groupName] = sortGroupTeams(teamsList, groupName);
+  }
+  
+  return sortedStandings;
+}
+
+function renderStandings() {
+  const area = $('#standingsArea'); if(!area) return;
+  area.innerHTML = '';
+  
+  const standings = calculateStandings();
+  
+  for (const groupName of Object.keys(GROUPS).sort()) {
+    const teams = standings[groupName];
+    const card = el('div', 'group-card');
+    
+    let rowsHtml = '';
+    teams.forEach((t, index) => {
+      const isZone = index < 2; // G1 e G2 avançam
+      const zoneClass = isZone ? 'zone-advance' : '';
+      const flagHtml = getFlagHtml(t.emoji, t.name);
+      
+      rowsHtml += `
+        <tr class="${zoneClass}">
+          <td class="pos-col"><span class="pos-badge">${index + 1}</span></td>
+          <td class="team-col">
+            <div class="team-name-cell">
+              ${flagHtml}
+              <span>${t.name}</span>
+            </div>
+          </td>
+          <td class="pts-col">${t.points}</td>
+          <td>${t.played}</td>
+          <td>${t.wins}</td>
+          <td>${t.draws}</td>
+          <td>${t.losses}</td>
+          <td>${t.gd > 0 ? '+' + t.gd : t.gd}</td>
+        </tr>
+      `;
+    });
+    
+    card.innerHTML = `
+      <div class="group-card-title">
+        <span>Grupo ${groupName}</span>
+        <small style="font-size:0.75rem; font-weight:600; color:var(--text-muted);">Copa 2026</small>
+      </div>
+      <table class="standings-table">
+        <thead>
+          <tr>
+            <th style="width: 30px;">#</th>
+            <th class="team-col">Seleção</th>
+            <th style="width: 35px;">P</th>
+            <th style="width: 25px;">J</th>
+            <th style="width: 25px;">V</th>
+            <th style="width: 25px;">E</th>
+            <th style="width: 25px;">D</th>
+            <th style="width: 30px;">SG</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml}
+        </tbody>
+      </table>
+    `;
+    area.appendChild(card);
+  }
+}
+
 
 /* ----------------------- RENDER: ADMIN ----------------------- */
 function renderAdmin(){
@@ -652,6 +855,9 @@ document.querySelectorAll('nav.tabs-nav button').forEach(b=>{
     document.querySelectorAll('nav.tabs-nav button').forEach(x=>x.classList.remove('active'));
     document.querySelectorAll('section').forEach(x=>x.classList.remove('active'));
     b.classList.add('active'); $('#'+b.dataset.tab).classList.add('active');
+    if (b.dataset.tab === 'tabelas') {
+      renderStandings();
+    }
   });
 });
 $('#saveNameBtn').addEventListener('click', enterName);
@@ -768,6 +974,16 @@ function showToast(t){ const e=$('#toast'); e.textContent=t; e.classList.add('sh
   
   checkImportPid();
   renderSyncSection();
+  
+  // Listeners dos filtros de status de jogos
+  document.querySelectorAll('#matchesStatusFilter .filter-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#matchesStatusFilter .filter-pill').forEach(x => x.classList.remove('active'));
+      btn.classList.add('active');
+      activeStatusFilter = btn.dataset.status;
+      renderMatches();
+    });
+  });
   
   if(myName){ $('#playerName').value=myName; enterName(); }
   renderRank();

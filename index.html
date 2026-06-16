@@ -31,6 +31,7 @@
 <nav class="tabs-nav">
   <button data-tab="palpites" class="tab-btn active">⚽ Palpites</button>
   <button data-tab="bonus" class="tab-btn">🏆 Bônus</button>
+  <button data-tab="tabelas" class="tab-btn">📋 Tabelas</button>
   <button data-tab="ranking" class="tab-btn">📊 Ranking</button>
   <button data-tab="compartilhar" class="tab-btn">🔗 Compartilhar</button>
   <button data-tab="admin" class="tab-btn">🔐 Admin</button>
@@ -82,6 +83,16 @@
         <b style="color:var(--accent-gold)">+2 pts</b> se cravar o placar exato (total 5).
         Jogos com <b style="color:var(--warning)">resultado oficial</b> ficam travados.
       </p>
+
+      <div class="filter-container">
+        <div class="filter-row" id="matchesStatusFilter">
+          <span class="filter-label">Exibir:</span>
+          <button class="filter-pill active" data-status="all">Todos</button>
+          <button class="filter-pill" data-status="upcoming">Próximos</button>
+          <button class="filter-pill" data-status="finished">Finalizados</button>
+        </div>
+      </div>
+
       <div id="matchesList"></div>
     </div>
   </section>
@@ -98,6 +109,17 @@
     <div id="bonusArea" style="display:none">
       <div id="deadlineBanner"></div>
       <div id="bonusList"></div>
+    </div>
+  </section>
+
+  <!-- ============ TABELAS DE CLASSIFICAÇÃO ============ -->
+  <section id="tabelas">
+    <div class="card">
+      <h2 class="card-title">📋 Classificação dos Grupos</h2>
+      <p class="text-muted">Acompanhe a tabela de classificação em tempo real, calculada com base nos resultados oficiais.</p>
+    </div>
+    <div class="standings-grid" id="standingsArea">
+      <p class="text-muted center">Carregando tabelas...</p>
     </div>
   </section>
 

@@ -821,3 +821,183 @@ code {
   line-height: 1.4;
 }
 
+/* =====================================================================
+   FILTROS DE JOGOS & CLASSIFICAÇÃO DOS GRUPOS
+   ===================================================================== */
+
+.filter-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+  background: var(--surface-card);
+  padding: var(--space-4);
+  border-radius: var(--radius-2xl);
+  border: var(--border-thin) solid var(--border-card);
+  box-shadow: var(--shadow-sm);
+}
+
+.filter-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.filter-row::-webkit-scrollbar {
+  display: none;
+}
+
+.filter-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  margin-right: var(--space-2);
+}
+
+.filter-pill {
+  background: var(--surface-inset);
+  color: var(--text-muted);
+  border: 1.5px solid var(--line);
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--dur-fast) var(--ease-standard);
+  font-family: var(--font-display);
+}
+
+.filter-pill:hover {
+  background: rgba(0, 195, 102, 0.06);
+  color: var(--brand);
+  border-color: rgba(0, 195, 102, 0.3);
+}
+
+.filter-pill.active {
+  background: var(--grad-brand);
+  color: var(--text-on-brand);
+  border-color: var(--brand);
+  box-shadow: var(--glow-brand);
+}
+
+/* Tabelas de Classificação */
+.standings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--space-5);
+  margin-top: var(--space-4);
+}
+
+.group-card {
+  background: var(--surface-card);
+  border-radius: var(--radius-2xl);
+  border: var(--border-thin) solid var(--border-card);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-4);
+  transition: transform var(--dur-base) var(--ease-standard);
+}
+.group-card:hover {
+  transform: translateY(-2px);
+}
+
+.group-card-title {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--text-heading);
+  margin-bottom: var(--space-3);
+  border-bottom: 2px solid var(--line);
+  padding-bottom: var(--space-2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.standings-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  font-family: var(--font-body);
+}
+
+.standings-table th {
+  font-weight: 700;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 8px 4px;
+  border-bottom: 1.5px solid var(--line-strong);
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  letter-spacing: 0.5px;
+}
+
+.standings-table th.team-col,
+.standings-table td.team-col {
+  text-align: left;
+  padding-left: 8px;
+}
+
+.standings-table td {
+  padding: 10px 4px;
+  text-align: center;
+  border-bottom: 1px solid var(--line);
+  color: var(--text-body);
+}
+
+.standings-table tr:last-child td {
+  border-bottom: none;
+}
+
+.standings-table tr.zone-advance .pos-col {
+  color: var(--green-600);
+  font-weight: 800;
+}
+
+.standings-table tr.zone-advance .pos-badge {
+  background: rgba(0, 195, 102, 0.12);
+  color: var(--green-700);
+}
+
+.standings-table .pos-col {
+  width: 24px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.standings-table .pos-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-size: 0.78rem;
+}
+
+.standings-table .team-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.standings-table .team-name-cell .fl-img {
+  width: 20px;
+  height: auto;
+  border-radius: 2px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.standings-table .pts-col {
+  font-weight: 700;
+  color: var(--text-strong);
+  background: rgba(0, 195, 102, 0.06);
+  border-radius: 4px;
+}
+
