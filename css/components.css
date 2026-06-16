@@ -871,12 +871,15 @@ code {
   white-space: nowrap;
   transition: all var(--dur-fast) var(--ease-standard);
   font-family: var(--font-display);
+  outline: none;
+  overflow: hidden;
 }
 
 .filter-pill:hover {
   background: rgba(0, 195, 102, 0.06);
   color: var(--brand);
   border-color: rgba(0, 195, 102, 0.3);
+  border-radius: var(--radius-pill);
 }
 
 .filter-pill.active {
@@ -884,6 +887,7 @@ code {
   color: var(--text-on-brand);
   border-color: var(--brand);
   box-shadow: var(--glow-brand);
+  border-radius: var(--radius-pill);
 }
 
 /* Tabelas de Classificação */
