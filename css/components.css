@@ -857,6 +857,7 @@ code {
   letter-spacing: 0.5px;
   white-space: nowrap;
   margin-right: var(--space-2);
+  flex-shrink: 0;
 }
 
 .filter-pill {
@@ -873,6 +874,7 @@ code {
   font-family: var(--font-display);
   outline: none;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .filter-pill:hover {
