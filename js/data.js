@@ -100,22 +100,22 @@ const MATCHES = [
 
 const KO_MATCHES = [
   // Round of 32 (16 avos de final)
-  { id: "KO-73", round: "R32", label: "16 avos (Jogo 73)", home: ["África do Sul", "🇿🇦"], away: ["Canadá", "🇨🇦"], kickoff: new Date("2026-06-28T18:00:00-03:00").getTime(), nextMatchId: "KO-90", nextMatchPosition: "home" },
-  { id: "KO-74", round: "R32", label: "16 avos (Jogo 74)", home: ["Alemanha", "🇩🇪"], away: ["Paraguai", "🇵🇾"], kickoff: new Date("2026-06-29T15:00:00-03:00").getTime(), nextMatchId: "KO-89", nextMatchPosition: "home" },
-  { id: "KO-75", round: "R32", label: "16 avos (Jogo 75)", home: ["Holanda", "🇳🇱"], away: ["Marrocos", "🇲🇦"], kickoff: new Date("2026-06-29T18:00:00-03:00").getTime(), nextMatchId: "KO-90", nextMatchPosition: "away" },
-  { id: "KO-76", round: "R32", label: "16 avos (Jogo 76)", home: ["Brasil", "🇧🇷"], away: ["Japão", "🇯🇵"], kickoff: new Date("2026-06-29T21:00:00-03:00").getTime(), nextMatchId: "KO-91", nextMatchPosition: "home" },
-  { id: "KO-77", round: "R32", label: "16 avos (Jogo 77)", home: ["França", "🇫🇷"], away: ["Suécia", "🇸🇪"], kickoff: new Date("2026-06-30T15:00:00-03:00").getTime(), nextMatchId: "KO-89", nextMatchPosition: "away" },
-  { id: "KO-78", round: "R32", label: "16 avos (Jogo 78)", home: ["Costa do Marfim", "🇨🇮"], away: ["Noruega", "🇳🇴"], kickoff: new Date("2026-06-30T18:00:00-03:00").getTime(), nextMatchId: "KO-91", nextMatchPosition: "away" },
+  { id: "KO-73", round: "R32", label: "16 avos (Jogo 73)", home: ["África do Sul", "🇿🇦"], away: ["Canadá", "🇨🇦"], kickoff: new Date("2026-06-28T16:00:00-03:00").getTime(), nextMatchId: "KO-90", nextMatchPosition: "home" },
+  { id: "KO-74", round: "R32", label: "16 avos (Jogo 74)", home: ["Alemanha", "🇩🇪"], away: ["Paraguai", "🇵🇾"], kickoff: new Date("2026-06-29T17:30:00-03:00").getTime(), nextMatchId: "KO-89", nextMatchPosition: "home" },
+  { id: "KO-75", round: "R32", label: "16 avos (Jogo 75)", home: ["Holanda", "🇳🇱"], away: ["Marrocos", "🇲🇦"], kickoff: new Date("2026-06-29T22:00:00-03:00").getTime(), nextMatchId: "KO-90", nextMatchPosition: "away" },
+  { id: "KO-76", round: "R32", label: "16 avos (Jogo 76)", home: ["Brasil", "🇧🇷"], away: ["Japão", "🇯🇵"], kickoff: new Date("2026-06-29T14:00:00-03:00").getTime(), nextMatchId: "KO-91", nextMatchPosition: "home" },
+  { id: "KO-77", round: "R32", label: "16 avos (Jogo 77)", home: ["França", "🇫🇷"], away: ["Suécia", "🇸🇪"], kickoff: new Date("2026-06-30T18:00:00-03:00").getTime(), nextMatchId: "KO-89", nextMatchPosition: "away" },
+  { id: "KO-78", round: "R32", label: "16 avos (Jogo 78)", home: ["Costa do Marfim", "🇨🇮"], away: ["Noruega", "🇳🇴"], kickoff: new Date("2026-06-30T14:00:00-03:00").getTime(), nextMatchId: "KO-91", nextMatchPosition: "away" },
   { id: "KO-79", round: "R32", label: "16 avos (Jogo 79)", home: ["México", "🇲🇽"], away: ["Equador", "🇪🇨"], kickoff: new Date("2026-06-30T22:00:00-03:00").getTime(), nextMatchId: "KO-92", nextMatchPosition: "home" },
-  { id: "KO-80", round: "R32", label: "16 avos (Jogo 80)", home: ["Inglaterra", "🏴󠁧󠁢󠁥󠁮󠁧󠁿"], away: ["RD Congo", "🇨🇩"], kickoff: new Date("2026-07-01T15:00:00-03:00").getTime(), nextMatchId: "KO-92", nextMatchPosition: "away" },
-  { id: "KO-81", round: "R32", label: "16 avos (Jogo 81)", home: ["Estados Unidos", "🇺🇸"], away: ["Bósnia e Herz.", "🇧🇦"], kickoff: new Date("2026-07-01T18:00:00-03:00").getTime(), nextMatchId: "KO-94", nextMatchPosition: "home" },
-  { id: "KO-82", round: "R32", label: "16 avos (Jogo 82)", home: ["Bélgica", "🇧🇪"], away: ["Senegal", "🇸🇳"], kickoff: new Date("2026-07-01T21:00:00-03:00").getTime(), nextMatchId: "KO-94", nextMatchPosition: "away" },
-  { id: "KO-83", round: "R32", label: "16 avos (Jogo 83)", home: ["Portugal", "🇵🇹"], away: ["Croácia", "🇭🇷"], kickoff: new Date("2026-07-02T15:00:00-03:00").getTime(), nextMatchId: "KO-93", nextMatchPosition: "home" },
-  { id: "KO-84", round: "R32", label: "16 avos (Jogo 84)", home: ["Espanha", "🇪🇸"], away: ["Áustria", "🇦🇹"], kickoff: new Date("2026-07-02T18:00:00-03:00").getTime(), nextMatchId: "KO-93", nextMatchPosition: "away" },
-  { id: "KO-85", round: "R32", label: "16 avos (Jogo 85)", home: ["Suíça", "🇨🇭"], away: ["Argélia", "🇩🇿"], kickoff: new Date("2026-07-02T21:00:00-03:00").getTime(), nextMatchId: "KO-96", nextMatchPosition: "home" },
-  { id: "KO-86", round: "R32", label: "16 avos (Jogo 86)", home: ["Argentina", "🇦🇷"], away: ["Cabo Verde", "🇨🇻"], kickoff: new Date("2026-07-03T15:00:00-03:00").getTime(), nextMatchId: "KO-95", nextMatchPosition: "home" },
-  { id: "KO-87", round: "R32", label: "16 avos (Jogo 87)", home: ["Colômbia", "🇨🇴"], away: ["Gana", "🇬🇭"], kickoff: new Date("2026-07-03T18:00:00-03:00").getTime(), nextMatchId: "KO-96", nextMatchPosition: "away" },
-  { id: "KO-88", round: "R32", label: "16 avos (Jogo 88)", home: ["Austrália", "🇦🇺"], away: ["Egito", "🇪🇬"], kickoff: new Date("2026-07-03T21:00:00-03:00").getTime(), nextMatchId: "KO-95", nextMatchPosition: "away" },
+  { id: "KO-80", round: "R32", label: "16 avos (Jogo 80)", home: ["Inglaterra", "🏴󠁧󠁢󠁥󠁮󠁧󠁿"], away: ["RD Congo", "🇨🇩"], kickoff: new Date("2026-07-01T13:00:00-03:00").getTime(), nextMatchId: "KO-92", nextMatchPosition: "away" },
+  { id: "KO-81", round: "R32", label: "16 avos (Jogo 81)", home: ["Estados Unidos", "🇺🇸"], away: ["Bósnia e Herz.", "🇧🇦"], kickoff: new Date("2026-07-01T21:00:00-03:00").getTime(), nextMatchId: "KO-94", nextMatchPosition: "home" },
+  { id: "KO-82", round: "R32", label: "16 avos (Jogo 82)", home: ["Bélgica", "🇧🇪"], away: ["Senegal", "🇸🇳"], kickoff: new Date("2026-07-01T17:00:00-03:00").getTime(), nextMatchId: "KO-94", nextMatchPosition: "away" },
+  { id: "KO-83", round: "R32", label: "16 avos (Jogo 83)", home: ["Portugal", "🇵🇹"], away: ["Croácia", "🇭🇷"], kickoff: new Date("2026-07-02T20:00:00-03:00").getTime(), nextMatchId: "KO-93", nextMatchPosition: "home" },
+  { id: "KO-84", round: "R32", label: "16 avos (Jogo 84)", home: ["Espanha", "🇪🇸"], away: ["Áustria", "🇦🇹"], kickoff: new Date("2026-07-02T16:00:00-03:00").getTime(), nextMatchId: "KO-93", nextMatchPosition: "away" },
+  { id: "KO-85", round: "R32", label: "16 avos (Jogo 85)", home: ["Suíça", "🇨🇭"], away: ["Argélia", "🇩🇿"], kickoff: new Date("2026-07-03T00:00:00-03:00").getTime(), nextMatchId: "KO-96", nextMatchPosition: "home" },
+  { id: "KO-86", round: "R32", label: "16 avos (Jogo 86)", home: ["Argentina", "🇦🇷"], away: ["Cabo Verde", "🇨🇻"], kickoff: new Date("2026-07-03T19:00:00-03:00").getTime(), nextMatchId: "KO-95", nextMatchPosition: "home" },
+  { id: "KO-87", round: "R32", label: "16 avos (Jogo 87)", home: ["Colômbia", "🇨🇴"], away: ["Gana", "🇬🇭"], kickoff: new Date("2026-07-03T22:30:00-03:00").getTime(), nextMatchId: "KO-96", nextMatchPosition: "away" },
+  { id: "KO-88", round: "R32", label: "16 avos (Jogo 88)", home: ["Austrália", "🇦🇺"], away: ["Egito", "🇪🇬"], kickoff: new Date("2026-07-03T15:00:00-03:00").getTime(), nextMatchId: "KO-95", nextMatchPosition: "away" },
 
   // Round of 16 (Oitavas de final)
   { id: "KO-89", round: "R16", label: "Oitavas (Jogo 89)", home: null, away: null, kickoff: new Date("2026-07-04T16:00:00-03:00").getTime(), nextMatchId: "KO-97", nextMatchPosition: "home" },
@@ -141,7 +141,7 @@ const KO_MATCHES = [
   { id: "KO-103", round: "3RD", label: "Disputa de 3º Lugar", home: null, away: null, kickoff: new Date("2026-07-18T17:00:00-03:00").getTime() },
 
   // Final
-  { id: "KO-104", round: "FIN", label: "Grande Final 🏆", home: null, away: null, kickoff: new Date("2026-07-19T17:00:00-03:00").getTime() }
+  { id: "KO-104", round: "FIN", label: "Grande Final 🏆", home: null, away: null, kickoff: new Date("2026-07-19T16:00:00-03:00").getTime() }
 ];
 
 /* Lista de seleções (para os dropdowns de bônus), em ordem alfabética. */
