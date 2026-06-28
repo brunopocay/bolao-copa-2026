@@ -44,13 +44,43 @@ function formatKickoff(ts) {
 /* ----------------------- PONTUAÇÃO ----------------------- */
 function sign(h,a){ return h>a ? 1 : (h<a ? -1 : 0); }
 
-function pointsFor(pick, res){            // pontos de UM jogo
+function pointsFor(pick, res){            // pontos de UM jogo da fase de grupos
   if(!pick || !res) return null;
   if(pick.h==null || pick.a==null || res.h==null || res.a==null) return null;
   if(sign(pick.h,pick.a)!==sign(res.h,res.a)) return 0;        // errou o resultado
   let p = PTS_RESULT;                                          // acertou resultado
   if(pick.h===res.h && pick.a===res.a) p += PTS_EXACT_BONUS;   // + placar exato
   return p;
+}
+
+function pointsForKo(pick, res) {         // pontos de UM jogo do mata-mata
+  if(!pick || !res) return null;
+  if(pick.h==null || pick.a==null || res.h==null || res.a==null) return null;
+
+  // 1. Decidido no tempo normal
+  if (res.h !== res.a) {
+    if (sign(pick.h, pick.a) !== sign(res.h, res.a)) return 0;
+    let p = PTS_RESULT;
+    if (pick.h === res.h && pick.a === res.a) p += PTS_EXACT_BONUS;
+    return p;
+  }
+
+  // 2. Empate em 90 minutos
+  if (pick.h !== pick.a) return 0; // Palpitou vitória de alguém, mas deu empate
+
+  const mode = pick.mode || 'standard';
+  if (mode === 'standard') {
+    let p = PTS_RESULT;
+    if (pick.h === res.h && pick.a === res.a) p += PTS_EXACT_BONUS;
+    if (pick.w && pick.w === res.w) p += 3; // Bônus por acertar o classificado
+    return p;
+  } else if (mode === 'risk') {
+    if (pick.dec === res.dec && pick.w === res.w) {
+      return 15; // Pontos triplicados do placar exato (5 * 3 = 15)
+    }
+    return 0; // Se errar o momento ou o vencedor, perde tudo
+  }
+  return 0;
 }
 function norm(s){ return (s||'').toString().trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
 function bonusTotal(myb){                  // pontos de TODOS os bônus do jogador
@@ -117,6 +147,7 @@ function initFirebase(){
       const newVal = s.val()||{};
       RESULTS = newVal; 
       renderMatches(); 
+      renderKoMatches();
       renderStandings(); 
       if (!adminHasUnsavedChanges) {
         tempAdminResults = JSON.parse(JSON.stringify(newVal));
@@ -286,13 +317,28 @@ function setSave(t){ const b=$('#saveBar'),i=$('#saveInfo'); if(b){b.style.displ
 
 /* ----------------------- RENDER: RANKING ----------------------- */
 function totalFor(p){
-  let total=0, exact=0, hit=0;
+  let total=0, exact=0, hit=0, riskHits=0;
   for(const m of MATCHES){
     const pt = pointsFor(p.picks?.[m.id], RESULTS[m.id]);
     if(pt>=5){total+=pt;exact++;} else if(pt===3){total+=3;hit++;}
   }
+  for(const m of KO_MATCHES){
+    const pt = pointsForKo(p.picks?.[m.id], RESULTS[m.id]);
+    if(pt !== null) {
+      total += pt;
+      if (pt >= 15 || pt === 5 || pt === 8) {
+        exact++;
+      } else if (pt === 3 || pt === 6) {
+        hit++;
+      }
+      const pick = p.picks?.[m.id];
+      if (pick && pick.mode === 'risk' && pt === 15) {
+        riskHits++;
+      }
+    }
+  }
   const bp = bonusTotal(p.bonus);
-  return {total:total+bp, exact, hit, bonus:bp};
+  return {total:total+bp, exact, hit, bonus:bp, riskHits};
 }
 function renderRank(){
   const box=$('#rankList'); if(!box) return;
@@ -327,7 +373,7 @@ function renderRank(){
       <div class="pos${medal}">${icon}</div>
       <div>
         <div class="name">${p.name}${p.id===pid?' <span style="font-weight:400; font-size:0.8em">(você)</span>':''}</div>
-        <div class="stats">🎯 ${p.exact} exatos · ✅ ${p.hit} resultados · 🏆 ${p.bonus} bônus</div>
+        <div class="stats">🎯 ${p.exact} exatos · ✅ ${p.hit} resultados · 🏆 ${p.bonus} bônus${p.riskHits > 0 ? ` · 🔥 ${p.riskHits} risco` : ''}</div>
       </div>
       <div class="pts">${p.total} pts</div>`;
     box.appendChild(row);
@@ -530,6 +576,317 @@ function renderStandings() {
 }
 
 
+/* ----------------------- LÓGICA DO MATA-MATA (RESOLUÇÃO & RENDER) ----------------------- */
+let activeKoRoundFilter = 'all';
+
+function getResolvedKoMatches(picksOrResults) {
+  const resolved = JSON.parse(JSON.stringify(KO_MATCHES));
+  const findMatch = id => resolved.find(m => m.id === id);
+  
+  const getWinnerOf = (m) => {
+    if (!m.home || !m.away) return null;
+    const res = picksOrResults[m.id];
+    if (!res || res.h === null || res.a === null) return null;
+    if (res.h > res.a) return m.home;
+    if (res.a > res.h) return m.away;
+    if (res.w === 'h') return m.home;
+    if (res.w === 'a') return m.away;
+    return null;
+  };
+
+  const getLoserOf = (m) => {
+    if (!m.home || !m.away) return null;
+    const res = picksOrResults[m.id];
+    if (!res || res.h === null || res.a === null) return null;
+    if (res.h > res.a) return m.away;
+    if (res.a > res.h) return m.home;
+    if (res.w === 'h') return m.away;
+    if (res.w === 'a') return m.home;
+    return null;
+  };
+  
+  for (const m of resolved) {
+    const winner = getWinnerOf(m);
+    if (winner && m.nextMatchId) {
+      const nextMatch = findMatch(m.nextMatchId);
+      if (nextMatch) {
+        if (m.nextMatchPosition === 'home') {
+          nextMatch.home = winner;
+        } else if (m.nextMatchPosition === 'away') {
+          nextMatch.away = winner;
+        }
+      }
+    }
+    
+    if (m.round === 'SF' && m.loserMatchId) {
+      const loser = getLoserOf(m);
+      if (loser) {
+        const loserMatch = findMatch(m.loserMatchId);
+        if (loserMatch) {
+          if (m.loserMatchPosition === 'home') {
+            loserMatch.home = loser;
+          } else if (m.loserMatchPosition === 'away') {
+            loserMatch.away = loser;
+          }
+        }
+      }
+    }
+  }
+  
+  return resolved;
+}
+
+function renderKoMatches(){
+  const box = $('#matamataList'); if(!box || !myName) return;
+  
+  // Guardar altura anterior para evitar pulo de página (scroll jump)
+  const oldHeight = box.offsetHeight;
+  if (oldHeight > 0) {
+    box.style.minHeight = oldHeight + 'px';
+  }
+  
+  // Guardar elemento que tinha o foco atual
+  const activeEl = document.activeElement;
+  const activeId = activeEl ? activeEl.dataset.id : null;
+  const activeSide = activeEl ? activeEl.dataset.side : null;
+  
+  box.innerHTML='';
+  
+  const resolved = getResolvedKoMatches(myPicks);
+  let curRound = null;
+  const ROUND_LABELS = {
+    'R32': '16 Avos de Final',
+    'R16': 'Oitavas de Final',
+    'QF': 'Quartas de Final',
+    'SF': 'Semifinais',
+    '3RD': 'Disputa de 3º Lugar',
+    'FIN': 'Grande Final 🏆'
+  };
+
+  for(const m of resolved){
+    if (activeKoRoundFilter !== 'all') {
+      if (activeKoRoundFilter === 'SF' && (m.round !== 'SF' && m.round !== '3RD' && m.round !== 'FIN')) continue;
+      if (activeKoRoundFilter !== 'SF' && m.round !== activeKoRoundFilter) continue;
+    }
+
+    if(m.round !== curRound){
+      curRound = m.round;
+      const t = el('div', 'group-title');
+      t.innerHTML = `🏁 ${ROUND_LABELS[m.round] || m.round}`;
+      box.appendChild(t);
+    }
+
+    const res = RESULTS[m.id];
+    const locked = !!res || Date.now() >= m.kickoff;
+    const pick = myPicks[m.id] || {};
+    
+    const homeTeam = m.home || ["A definir", "❓"];
+    const awayTeam = m.away || ["A definir", "❓"];
+    
+    const row = el('div', 'match-row ko-match' + (locked ? ' locked' : ''));
+    
+    const homeFlagHtml = homeTeam[0] !== 'A definir' ? getFlagHtml(homeTeam[1], homeTeam[0]) : `<span class="fl-emoji">${homeTeam[1]}</span>`;
+    const awayFlagHtml = awayTeam[0] !== 'A definir' ? getFlagHtml(awayTeam[1], awayTeam[0]) : `<span class="fl-emoji">${awayTeam[1]}</span>`;
+    
+    let matchHtml = `
+      <div class="team home"><span class="nm">${homeTeam[0]}</span><span class="fl">${homeFlagHtml}</span></div>
+      <div class="score-area">
+        <input class="score-input ko-score-input" type="number" min="0" max="99" inputmode="numeric" data-id="${m.id}" data-side="h" value="${pick.h??''}" ${locked || !m.home || !m.away ? 'disabled' : ''}/>
+        <span class="x">×</span>
+        <input class="score-input ko-score-input" type="number" min="0" max="99" inputmode="numeric" data-id="${m.id}" data-side="a" value="${pick.a??''}" ${locked || !m.home || !m.away ? 'disabled' : ''}/>
+      </div>
+      <div class="team away"><span class="fl">${awayFlagHtml}</span><span class="nm">${awayTeam[0]}</span></div>
+      <div class="match-details">
+        <span class="kickoff-time">⏰ ${formatKickoff(m.kickoff)}</span>
+        <span style="background:var(--surface-inset); padding:2px 6px; border-radius:4px; font-weight:700; font-size:0.8em; color:var(--text-muted);">${m.label}</span>
+        ${ (locked && !res) ? ' <span class="lock-badge">🔒 Bloqueado</span>' : '' }
+      </div>
+    `;
+
+    if (res) {
+      let officialText = `Oficial: ${getFlagHtml(getTeamFlagEmoji(homeTeam[0]), homeTeam[0])} ${res.h} × ${res.a} ${getFlagHtml(getTeamFlagEmoji(awayTeam[0]), awayTeam[0])}`;
+      if (res.h === res.a) {
+        const decLabel = res.dec === 'prorrogacao' ? 'Prorrogacão' : 'Pênaltis';
+        const winTeam = res.w === 'h' ? homeTeam[0] : awayTeam[0];
+        officialText += ` (Decidido na ${decLabel} - Vencedor: ${winTeam})`;
+      }
+      matchHtml += `<div class="official-result">${officialText} ${ptsTagKo(pick, res)}</div>`;
+    }
+
+    if (typeof pick.h === 'number' && typeof pick.a === 'number' && pick.h === pick.a && m.home && m.away) {
+      const mode = pick.mode || 'standard';
+      const winner = pick.w || '';
+      const dec = pick.dec || '';
+      const needsSelection = !winner || (mode === 'risk' && !dec);
+
+      let tiebreakerHtml = `
+        <div class="ko-tiebreaker-box${needsSelection ? ' pending-selection' : ''}">
+          <div class="ko-tiebreaker-title">
+            <span>⚖️ Decisão do Empate</span>
+            ${needsSelection 
+              ? `<span style="font-size: 0.8rem; color: var(--danger); font-weight:800; animation: blink 1.5s infinite;">⚠️ Seleção Pendente!</span>`
+              : `<span style="font-size: 0.75rem; color: var(--text-muted);">Como este jogo será decidido?</span>`
+            }
+          </div>
+          <div class="ko-mode-selector">
+            <button class="ko-mode-btn ${mode === 'standard' ? 'active' : ''}" data-id="${m.id}" data-mode="standard" ${locked?'disabled':''}>Padrão (Seguro)</button>
+            <button class="ko-mode-btn ${mode === 'risk' ? 'active' : ''}" data-id="${m.id}" data-mode="risk" ${locked?'disabled':''}>Risco/Recompensa</button>
+          </div>
+          <div class="ko-choice-row">
+      `;
+
+      if (mode === 'standard') {
+        tiebreakerHtml += `
+          <button class="ko-choice-btn ${winner === 'h' ? 'active' : ''}" data-id="${m.id}" data-winner="h" ${locked?'disabled':''}>
+            ${getFlagHtml(homeTeam[1], homeTeam[0])} ${homeTeam[0]} avança
+          </button>
+          <button class="ko-choice-btn ${winner === 'a' ? 'active' : ''}" data-id="${m.id}" data-winner="a" ${locked?'disabled':''}>
+            ${getFlagHtml(awayTeam[1], awayTeam[0])} ${awayTeam[0]} avança
+          </button>
+        `;
+      } else {
+        tiebreakerHtml += `
+          <button class="ko-choice-btn risk ${winner === 'h' && dec === 'prorrogacao' ? 'active' : ''}" data-id="${m.id}" data-winner="h" data-dec="prorrogacao" ${locked?'disabled':''}>
+            ${getFlagHtml(homeTeam[1], homeTeam[0])} ${homeTeam[0]} na Prorrogação
+          </button>
+          <button class="ko-choice-btn risk ${winner === 'h' && dec === 'penaltis' ? 'active' : ''}" data-id="${m.id}" data-winner="h" data-dec="penaltis" ${locked?'disabled':''}>
+            ${getFlagHtml(homeTeam[1], homeTeam[0])} ${homeTeam[0]} nos Pênaltis
+          </button>
+          <button class="ko-choice-btn risk ${winner === 'a' && dec === 'prorrogacao' ? 'active' : ''}" data-id="${m.id}" data-winner="a" data-dec="prorrogacao" ${locked?'disabled':''}>
+            ${getFlagHtml(awayTeam[1], awayTeam[0])} ${awayTeam[0]} na Prorrogação
+          </button>
+          <button class="ko-choice-btn risk ${winner === 'a' && dec === 'penaltis' ? 'active' : ''}" data-id="${m.id}" data-winner="a" data-dec="penaltis" ${locked?'disabled':''}>
+            ${getFlagHtml(awayTeam[1], awayTeam[0])} ${awayTeam[0]} nos Pênaltis
+          </button>
+        `;
+      }
+
+      tiebreakerHtml += `</div></div>`;
+      matchHtml += tiebreakerHtml;
+    }
+
+    row.innerHTML = matchHtml;
+    box.appendChild(row);
+  }
+
+  box.querySelectorAll('.ko-score-input').forEach(inp => inp.addEventListener('input', onKoPickInput));
+  box.querySelectorAll('.ko-mode-btn').forEach(btn => btn.addEventListener('click', onKoModeClick));
+  box.querySelectorAll('.ko-choice-btn').forEach(btn => btn.addEventListener('click', onKoChoiceClick));
+
+  // Restaurar foco do campo que estava ativo para não quebrar a digitação
+  if (activeId) {
+    const targetInput = box.querySelector(`input[data-id="${activeId}"][data-side="${activeSide}"]`);
+    if (targetInput) {
+      targetInput.focus();
+    }
+  }
+
+  // Resetar min-height após o render completo
+  requestAnimationFrame(() => {
+    box.style.minHeight = '';
+  });
+}
+
+function ptsTagKo(pick, res) {
+  const p = pointsForKo(pick, res); if (p === null) return '';
+  const cls = p >= 15 ? 'pts-5' : (p >= 5 ? 'pts-5' : (p >= 3 ? 'pts-3' : 'pts-0'));
+  return `<span class="pts-tag ${cls}">+${p} pts</span>`;
+}
+
+function onKoPickInput(e) {
+  const id = e.target.dataset.id, side = e.target.dataset.side;
+  const resolved = getResolvedKoMatches(myPicks);
+  const match = resolved.find(m => m.id === id);
+  if (match && Date.now() >= match.kickoff) {
+    showToast('Palpite bloqueado: o jogo já começou! ❌');
+    renderKoMatches();
+    return;
+  }
+  let v = e.target.value === '' ? null : Math.max(0, Math.min(99, parseInt(e.target.value, 10)));
+  
+  if (!myPicks[id]) myPicks[id] = { h: null, a: null, mode: 'standard', w: null, dec: null };
+  myPicks[id][side] = v;
+
+  if (myPicks[id].h !== null && myPicks[id].a !== null && myPicks[id].h !== myPicks[id].a) {
+    myPicks[id].w = null;
+    myPicks[id].dec = null;
+  }
+
+  setSave('⏳ Salvando…'); clearTimeout(saveTimer); saveTimer = setTimeout(savePlayer, 600);
+  renderKoMatches();
+  scheduleMatchReminders();
+}
+
+function onKoModeClick(e) {
+  const id = e.currentTarget.dataset.id;
+  const mode = e.currentTarget.dataset.mode;
+  if (!myPicks[id]) return;
+  
+  myPicks[id].mode = mode;
+  myPicks[id].w = null; 
+  myPicks[id].dec = null;
+
+  setSave('⏳ Salvando…'); clearTimeout(saveTimer); saveTimer = setTimeout(savePlayer, 600);
+  renderKoMatches();
+}
+
+function onKoChoiceClick(e) {
+  const id = e.currentTarget.dataset.id;
+  const winner = e.currentTarget.dataset.winner;
+  const dec = e.currentTarget.dataset.dec || null;
+  if (!myPicks[id]) return;
+  
+  myPicks[id].w = winner;
+  myPicks[id].dec = dec;
+
+  setSave('⏳ Salvando…'); clearTimeout(saveTimer); saveTimer = setTimeout(savePlayer, 600);
+  renderKoMatches();
+}
+
+function onAdminKoInput(e) {
+  const id = e.target.dataset.id;
+  const wrap = e.target.closest('.score-area');
+  const hVal = wrap.querySelector('[data-side=h]').value;
+  const aVal = wrap.querySelector('[data-side=a]').value;
+  
+  if (hVal === '' || aVal === '') {
+    delete tempAdminResults[id];
+  } else {
+    const h = parseInt(hVal, 10);
+    const a = parseInt(aVal, 10);
+    
+    if (!tempAdminResults[id]) {
+      tempAdminResults[id] = { h, a, dec: 'normal', w: null };
+    } else {
+      tempAdminResults[id].h = h;
+      tempAdminResults[id].a = a;
+    }
+    
+    if (h !== a) {
+      tempAdminResults[id].dec = 'normal';
+      tempAdminResults[id].w = null;
+    } else {
+      tempAdminResults[id].dec = tempAdminResults[id].dec === 'normal' ? 'prorrogacao' : tempAdminResults[id].dec;
+    }
+  }
+  
+  updateAdminSaveButtonState(true);
+  renderAdmin();
+}
+
+function onAdminKoChoiceClick(e) {
+  const id = e.currentTarget.dataset.id;
+  const winner = e.currentTarget.dataset.winner;
+  const dec = e.currentTarget.dataset.dec;
+  
+  if (tempAdminResults[id]) {
+    tempAdminResults[id].w = winner;
+    tempAdminResults[id].dec = dec;
+    updateAdminSaveButtonState(true);
+    renderAdmin();
+  }
+}
+
 /* ----------------------- RENDER: ADMIN ----------------------- */
 function renderAdmin(){
   if(!isAdmin) return;
@@ -574,6 +931,84 @@ function renderAdmin(){
     box.appendChild(row);
   }
   box.querySelectorAll('input').forEach(inp=> inp.addEventListener('input', onAdminInput));
+
+  const koBox = $('#adminKoMatches'); if(!koBox) return;
+  koBox.innerHTML = '';
+  const resolved = getResolvedKoMatches(tempAdminResults);
+  let curRound = null;
+  const ROUND_LABELS = {
+    'R32': '16 Avos de Final',
+    'R16': 'Oitavas de Final',
+    'QF': 'Quartas de Final',
+    'SF': 'Semifinais',
+    '3RD': 'Disputa de 3º Lugar',
+    'FIN': 'Grande Final 🏆'
+  };
+
+  for(const m of resolved){
+    if(m.round !== curRound){
+      curRound = m.round;
+      const t = el('div', 'group-title');
+      t.innerHTML = `🏁 ${ROUND_LABELS[m.round] || m.round}`;
+      koBox.appendChild(t);
+    }
+    
+    const res = tempAdminResults[m.id] || { h: null, a: null, dec: 'normal', w: null };
+    const homeTeam = m.home || ["A definir", "❓"];
+    const awayTeam = m.away || ["A definir", "❓"];
+    
+    const row = el('div', 'match-row');
+    let matchHtml = `
+      <div class="team home"><span class="nm">${homeTeam[0]}</span><span class="fl">${homeTeam[0] !== 'A definir' ? getFlagHtml(homeTeam[1], homeTeam[0]) : `<span class="fl-emoji">${homeTeam[1]}</span>`}</span></div>
+      <div class="score-area">
+        <input class="score-input admin-ko-score-input" type="number" min="0" max="99" data-id="${m.id}" data-side="h" value="${res.h??''}" ${!m.home || !m.away ? 'disabled' : ''}/>
+        <span class="x">×</span>
+        <input class="score-input admin-ko-score-input" type="number" min="0" max="99" data-id="${m.id}" data-side="a" value="${res.a??''}" ${!m.home || !m.away ? 'disabled' : ''}/>
+      </div>
+      <div class="team away"><span class="fl">${awayTeam[0] !== 'A definir' ? getFlagHtml(awayTeam[1], awayTeam[0]) : `<span class="fl-emoji">${awayTeam[1]}</span>`}</span><span class="nm">${awayTeam[0]}</span></div>
+      <div class="match-details">
+        <span class="kickoff-time">⏰ ${formatKickoff(m.kickoff)}</span>
+        <span style="background:var(--surface-inset); padding:2px 6px; border-radius:4px; font-weight:700; font-size:0.8em; color:var(--text-muted);">${m.label}</span>
+      </div>
+    `;
+
+    if (typeof res.h === 'number' && typeof res.a === 'number' && res.h === res.a && m.home && m.away) {
+      const dec = res.dec || '';
+      const winner = res.w || '';
+      const adminNeedsSelection = !winner || dec === 'normal';
+      matchHtml += `
+        <div class="ko-tiebreaker-box${adminNeedsSelection ? ' pending-selection' : ''}" style="grid-column: 1 / -1;">
+          <div class="ko-tiebreaker-title">
+            <span>⚖️ Decisão do Empate (Oficial)</span>
+            ${adminNeedsSelection 
+              ? `<span style="font-size: 0.8rem; color: var(--danger); font-weight:800; animation: blink 1.5s infinite;">⚠️ Seleção Pendente!</span>`
+              : ''
+            }
+          </div>
+          <div class="ko-choice-row">
+            <button class="ko-choice-btn admin-ko-choice-btn ${winner === 'h' && dec === 'prorrogacao' ? 'active' : ''}" data-id="${m.id}" data-winner="h" data-dec="prorrogacao">
+              ${getFlagHtml(homeTeam[1], homeTeam[0])} ${homeTeam[0]} na Prorrogação
+            </button>
+            <button class="ko-choice-btn admin-ko-choice-btn ${winner === 'h' && dec === 'penaltis' ? 'active' : ''}" data-id="${m.id}" data-winner="h" data-dec="penaltis">
+              ${getFlagHtml(homeTeam[1], homeTeam[0])} ${homeTeam[0]} nos Pênaltis
+            </button>
+            <button class="ko-choice-btn admin-ko-choice-btn ${winner === 'a' && dec === 'prorrogacao' ? 'active' : ''}" data-id="${m.id}" data-winner="a" data-dec="prorrogacao">
+              ${getFlagHtml(awayTeam[1], awayTeam[0])} ${awayTeam[0]} na Prorrogação
+            </button>
+            <button class="ko-choice-btn admin-ko-choice-btn ${winner === 'a' && dec === 'penaltis' ? 'active' : ''}" data-id="${m.id}" data-winner="a" data-dec="penaltis">
+              ${getFlagHtml(awayTeam[1], awayTeam[0])} ${awayTeam[0]} nos Pênaltis
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    row.innerHTML = matchHtml;
+    koBox.appendChild(row);
+  }
+
+  koBox.querySelectorAll('.admin-ko-score-input').forEach(inp => inp.addEventListener('input', onAdminKoInput));
+  koBox.querySelectorAll('.admin-ko-choice-btn').forEach(btn => btn.addEventListener('click', onAdminKoChoiceClick));
 }
 
 function updateAdminSaveButtonState(hasChanges) {
@@ -858,6 +1293,9 @@ document.querySelectorAll('nav.tabs-nav button').forEach(b=>{
     if (b.dataset.tab === 'tabelas') {
       renderStandings();
     }
+    if (b.dataset.tab === 'matamata') {
+      renderKoMatches();
+    }
   });
 });
 $('#saveNameBtn').addEventListener('click', enterName);
@@ -868,14 +1306,16 @@ function enterName(){
   myName=v; localStorage.setItem('bolao_name', v);
   $('#identityCard').innerHTML=`<h2 class="card-title">👤 Olá, ${myName}!</h2><p class="text-muted">Bons palpites! Seus chutes salvam automaticamente. Para trocar o nome, limpe os dados do navegador.</p>`;
   $('#matchesArea').style.display='block';
+  if($('#matamataGate')) $('#matamataGate').style.display='none';
+  if($('#matamataArea')) $('#matamataArea').style.display='block';
   if(FB_OK){
     db.ref('players/'+pid).once('value').then(s=>{
       const d=s.val();
       if(d){ if(d.picks) myPicks=d.picks; if(d.bonus) myBonus=d.bonus; }
-      renderMatches(); renderBonus(); savePlayer();
+      renderMatches(); renderKoMatches(); renderBonus(); savePlayer();
       checkNotificationSupport();
     });
-  } else { renderMatches(); renderBonus(); }
+  } else { renderMatches(); renderKoMatches(); renderBonus(); }
   renderRank();
 }
 async function sha256(str) {
@@ -982,6 +1422,15 @@ function showToast(t){ const e=$('#toast'); e.textContent=t; e.classList.add('sh
       btn.classList.add('active');
       activeStatusFilter = btn.dataset.status;
       renderMatches();
+    });
+  });
+
+  document.querySelectorAll('#matamataRoundFilter .filter-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#matamataRoundFilter .filter-pill').forEach(x => x.classList.remove('active'));
+      btn.classList.add('active');
+      activeKoRoundFilter = btn.dataset.round;
+      renderKoMatches();
     });
   });
   

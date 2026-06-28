@@ -1005,3 +1005,135 @@ code {
   border-radius: 4px;
 }
 
+/* ---- KO TIEBREAKER & RISK/REWARD STYLE ---- */
+.ko-tiebreaker-box {
+  grid-column: 1 / -1;
+  background: var(--surface-inset);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-lg);
+  padding: 12px 14px;
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: fade var(--dur-base) var(--ease-standard);
+}
+
+.ko-tiebreaker-title {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--text-heading);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ko-mode-selector {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1.5px solid var(--line);
+  padding-bottom: 8px;
+}
+
+.ko-mode-btn {
+  background: transparent;
+  border: none;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  transition: all var(--dur-fast);
+}
+
+.ko-mode-btn.active {
+  background: var(--brand);
+  color: var(--text-on-brand);
+}
+
+.ko-choice-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.ko-choice-btn {
+  background: var(--white);
+  border: 1.5px solid var(--border-input);
+  padding: 8px 14px;
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all var(--dur-fast);
+  color: var(--text-body);
+}
+
+.ko-choice-btn:hover {
+  border-color: var(--brand);
+  color: var(--brand);
+}
+
+.ko-choice-btn.active {
+  background: var(--grad-brand);
+  color: var(--text-on-brand);
+  border-color: var(--brand);
+  box-shadow: var(--glow-brand);
+}
+
+.ko-choice-btn.active.risk {
+  background: var(--grad-blue);
+  color: var(--text-on-brand);
+  border-color: var(--border-focus);
+  box-shadow: var(--glow-blue);
+}
+
+.ko-winner-badge {
+  font-size: 0.72rem;
+  font-weight: 800;
+  background: var(--grad-gold);
+  color: #713f12;
+  padding: 2px 6px;
+  border-radius: 4px;
+  box-shadow: var(--glow-gold);
+  text-transform: uppercase;
+  margin-left: 6px;
+}
+
+.ko-risk-badge {
+  font-size: 0.72rem;
+  font-weight: 800;
+  background: var(--grad-blue);
+  color: #ffffff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  box-shadow: var(--glow-blue);
+  text-transform: uppercase;
+  margin-left: 6px;
+}
+
+.match-row.ko-match {
+  position: relative;
+  overflow: hidden;
+}
+
+.ko-tiebreaker-box.pending-selection {
+  border-color: var(--danger) !important;
+  box-shadow: 0 0 0 1px var(--danger) inset !important;
+  background: rgba(239, 68, 68, 0.02) !important;
+}
+
+@keyframes blink {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+

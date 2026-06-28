@@ -30,6 +30,7 @@
 
 <nav class="tabs-nav">
   <button data-tab="palpites" class="tab-btn active">⚽ Palpites</button>
+  <button data-tab="matamata" class="tab-btn">⚔️ Mata-Mata</button>
   <button data-tab="bonus" class="tab-btn">🏆 Bônus</button>
   <button data-tab="tabelas" class="tab-btn">📋 Tabelas</button>
   <button data-tab="ranking" class="tab-btn">📊 Ranking</button>
@@ -94,6 +95,43 @@
       </div>
 
       <div id="matchesList"></div>
+    </div>
+  </section>
+
+  <!-- ============ MATA-MATA ============ -->
+  <section id="matamata">
+    <div class="banner-premio">
+      <span class="gift-icon">🏆</span>
+      <div>
+        <h3>Fase Eliminatória (Mata-Mata)</h3>
+        <p>Preencha os placares das fases decisivas. Se houver <b>empate em 90 minutos</b>, escolha como quer pontuar:<br/>
+        • <b>Padrão (Seguro):</b> Placar exato (5 pts) + acertar quem avança (+3 pts) = até <b>8 pontos</b>.<br/>
+        • <b>Risco/Recompensa:</b> Crave o classificado e o momento (Prorrogação/Pênaltis) para ganhar <b>15 pontos</b>! Se errar qualquer detalhe, fica com <b>0</b>.</p>
+      </div>
+    </div>
+
+    <div id="matamataGate">
+      <div class="card center"><p class="text-muted">Digite seu nome na aba <b>⚽ Palpites</b> para liberar os palpites de mata-mata.</p></div>
+    </div>
+
+    <div id="matamataArea" style="display:none">
+      <p class="text-muted" style="margin-bottom:10px">
+        Assim como na fase de grupos, os placares salvam sozinhos ☁️.
+        No empate, escolha a aba correspondente e clique no time que avança (seja por prorrogação ou pênaltis).
+      </p>
+
+      <div class="filter-container">
+        <div class="filter-row" id="matamataRoundFilter">
+          <span class="filter-label">Fase:</span>
+          <button class="filter-pill active" data-round="all">Todos</button>
+          <button class="filter-pill" data-round="R32">16 avos</button>
+          <button class="filter-pill" data-round="R16">Oitavas</button>
+          <button class="filter-pill" data-round="QF">Quartas</button>
+          <button class="filter-pill" data-round="SF">Semis/Finais</button>
+        </div>
+      </div>
+
+      <div id="matamataList"></div>
     </div>
   </section>
 
@@ -206,8 +244,10 @@
         <button class="btn ghost size-md" id="adminLogout" style="margin-bottom:12px">Sair do modo admin</button>
         <div class="subhead">🏆 Resultados dos bônus</div>
         <div id="adminBonus"></div>
-        <div class="subhead">⚽ Resultados dos jogos</div>
+        <div class="subhead">⚽ Resultados da fase de grupos</div>
         <div id="adminMatches"></div>
+        <div class="subhead">⚔️ Resultados do mata-mata</div>
+        <div id="adminKoMatches"></div>
       </div>
     </div>
   </section>
