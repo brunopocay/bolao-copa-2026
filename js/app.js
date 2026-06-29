@@ -652,7 +652,7 @@ function renderKoMatches(){
   
   box.innerHTML='';
   
-  const resolved = getResolvedKoMatches(myPicks);
+  const resolved = getResolvedKoMatches(RESULTS);
   let curRound = null;
   const ROUND_LABELS = {
     'R32': '16 Avos de Final',
@@ -795,7 +795,7 @@ function ptsTagKo(pick, res) {
 
 function onKoPickInput(e) {
   const id = e.target.dataset.id, side = e.target.dataset.side;
-  const resolved = getResolvedKoMatches(myPicks);
+  const resolved = getResolvedKoMatches(RESULTS);
   const match = resolved.find(m => m.id === id);
   if (match && Date.now() >= match.kickoff) {
     showToast('Palpite bloqueado: o jogo já começou! ❌');
