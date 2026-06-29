@@ -849,11 +849,11 @@ function onAdminKoInput(e) {
   const hVal = wrap.querySelector('[data-side=h]').value;
   const aVal = wrap.querySelector('[data-side=a]').value;
   
-  if (hVal === '' || aVal === '') {
+  if (hVal === '' && aVal === '') {
     delete tempAdminResults[id];
   } else {
-    const h = parseInt(hVal, 10);
-    const a = parseInt(aVal, 10);
+    const h = hVal === '' ? null : parseInt(hVal, 10);
+    const a = aVal === '' ? null : parseInt(aVal, 10);
     
     if (!tempAdminResults[id]) {
       tempAdminResults[id] = { h, a, dec: 'normal', w: null };
@@ -862,7 +862,7 @@ function onAdminKoInput(e) {
       tempAdminResults[id].a = a;
     }
     
-    if (h !== a) {
+    if (h === null || a === null || h !== a) {
       tempAdminResults[id].dec = 'normal';
       tempAdminResults[id].w = null;
     } else {
@@ -890,6 +890,11 @@ function onAdminKoChoiceClick(e) {
 /* ----------------------- RENDER: ADMIN ----------------------- */
 function renderAdmin(){
   if(!isAdmin) return;
+  const activeEl = document.activeElement;
+  const activeId = activeEl ? activeEl.dataset.id : null;
+  const activeSide = activeEl ? activeEl.dataset.side : null;
+  const activeAbid = activeEl ? activeEl.dataset.abid : null;
+
   const bb=$('#adminBonus'); bb.innerHTML='';
   const teamOpts = ['<option value="">— selecione —</option>']
       .concat(TEAMS.map(t=>`<option value="${t[0]}">${t[1]} ${t[0]}</option>`)).join('');
@@ -1009,6 +1014,14 @@ function renderAdmin(){
 
   koBox.querySelectorAll('.admin-ko-score-input').forEach(inp => inp.addEventListener('input', onAdminKoInput));
   koBox.querySelectorAll('.admin-ko-choice-btn').forEach(btn => btn.addEventListener('click', onAdminKoChoiceClick));
+
+  if (activeId && activeSide) {
+    const targetInput = document.querySelector(`input[data-id="${activeId}"][data-side="${activeSide}"]`);
+    if (targetInput) targetInput.focus();
+  } else if (activeAbid) {
+    const targetInput = document.querySelector(`[data-abid="${activeAbid}"]`);
+    if (targetInput) targetInput.focus();
+  }
 }
 
 function updateAdminSaveButtonState(hasChanges) {
@@ -1031,12 +1044,14 @@ function updateAdminSaveButtonState(hasChanges) {
 
 function onAdminInput(e){
   const id=e.target.dataset.id, wrap=e.target.closest('.score-area');
-  const h=wrap.querySelector('[data-side=h]').value, a=wrap.querySelector('[data-side=a]').value;
+  const hVal=wrap.querySelector('[data-side=h]').value, aVal=wrap.querySelector('[data-side=a]').value;
   
-  if (h === '' || a === '') {
+  if (hVal === '' && aVal === '') {
     delete tempAdminResults[id];
   } else {
-    tempAdminResults[id] = { h: parseInt(h, 10), a: parseInt(a, 10) };
+    const h = hVal === '' ? null : parseInt(hVal, 10);
+    const a = aVal === '' ? null : parseInt(aVal, 10);
+    tempAdminResults[id] = { h, a };
   }
   updateAdminSaveButtonState(true);
 }
@@ -1071,8 +1086,15 @@ function saveAllAdminChanges() {
   btn.disabled = true;
   btn.textContent = '⏳ Salvando…';
   
+  const cleanResults = {};
+  for (const [id, res] of Object.entries(tempAdminResults)) {
+    if (res && typeof res.h === 'number' && typeof res.a === 'number') {
+      cleanResults[id] = res;
+    }
+  }
+  
   Promise.all([
-    db.ref('results').set(tempAdminResults),
+    db.ref('results').set(cleanResults),
     db.ref('bonusResults').set(tempAdminBonusResults)
   ]).then(() => {
     showToast("Resultados oficiais salvos! ✓");
